@@ -5,7 +5,9 @@ export const prerender = true;
 
 export const GET: APIRoute = () =>
   new Response(
-    `User-agent: *
+    `# AI crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot and others) are
+# welcome: we want AI assistants to cite and link to our stories.
+User-agent: *
 Allow: /
 Disallow: /studio
 Disallow: /api/
