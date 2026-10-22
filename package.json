@@ -16,7 +16,8 @@
     "brand:assets": "node scripts/generate-brand-assets.mjs",
     "check": "astro check",
     "editor:add": "node --env-file=.env scripts/make-editor.mjs",
-    "stories:publish": "node --env-file=.env scripts/publish-stories.mjs"
+    "stories:publish": "node --env-file=.env scripts/publish-stories.mjs",
+    "og:generate": "node --env-file=.env scripts/generate-og.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.0",

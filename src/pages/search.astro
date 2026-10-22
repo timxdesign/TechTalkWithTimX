@@ -10,7 +10,7 @@ const results = q ? await search(q) : null;
 const count = results ? results.stories.length + results.episodes.length + results.people.length : 0;
 ---
 
-<BaseLayout title={q ? `Search: ${q}` : "Search"} noindex>
+<BaseLayout title={q ? `Search: ${q}` : "Search"} description="Search founder stories, podcast episodes and people on Tech Talk with TimX." noindex>
   <section class="container-editorial pt-14 md:pt-20">
     <h1 class="display text-[clamp(3rem,8vw,7rem)]">Search</h1>
     <form action="/search" method="get" role="search" class="mt-10 flex items-center gap-4 border-b-2 border-ink pb-3" data-astro-reload>

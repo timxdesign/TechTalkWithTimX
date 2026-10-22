@@ -19,11 +19,17 @@ const links = [
   person.linkedin_url && { label: "LinkedIn", href: person.linkedin_url },
   person.x_handle && { label: `@${person.x_handle.replace(/^@/, "")}`, href: `https://x.com/${person.x_handle.replace(/^@/, "")}` },
 ].filter(Boolean) as { label: string; href: string }[];
+const roleLine = [person.role, person.company].filter(Boolean).join(", ");
+// Bios are often too short or too long for a search snippet, so lead with who they are.
+const personDescription =
+  person.bio && person.bio.length >= 120
+    ? person.bio
+    : `${person.name}${roleLine ? `, ${roleLine}` : ""}. ${person.bio ? `${person.bio} ` : ""}Stories and podcast conversations on Tech Talk with TimX.`;
 ---
 
 <BaseLayout
   title={`${person.name}${person.company ? `, ${person.company}` : ""}`}
-  description={person.bio ?? `${person.name} on Tech Talk with TimX.`}
+  description={personDescription}
   image={person.avatar_url}
   type="profile"
   schema={[

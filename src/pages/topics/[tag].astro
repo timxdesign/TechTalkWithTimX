@@ -10,11 +10,14 @@ const stories = await getStoriesByTag(tag);
 if (!stories.length) return Astro.rewrite("/404");
 cachePage(Astro, ["stories"]);
 const title = tag.charAt(0).toUpperCase() + tag.slice(1);
+// A topic with a single story is a thin page; keep it out of the index until it grows.
+const MIN_TOPIC_STORIES = 2;
 ---
 
 <BaseLayout
+  noindex={stories.length < MIN_TOPIC_STORIES}
   title={`${title}: stories`}
-  description={`Stories about ${tag} from founders and builders on Tech Talk with TimX.`}
+  description={`Stories about ${tag.replace(/-/g, " ")} from founders and builders on Tech Talk with TimX: how they started, what they built and what they learned.`}
   schema={[
     breadcrumbSchema([
       { name: "Home", path: "/" },

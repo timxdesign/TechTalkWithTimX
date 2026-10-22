@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import * as founderFiles from "./content/founder-files.mjs";
 import * as thePivot from "./content/the-pivot.mjs";
 import * as deepDivesBuilders from "./content/deep-dives-builders.mjs";
+import { seo } from "./content/seo.mjs";
 
 const db = createClient(process.env.PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
@@ -16,13 +17,13 @@ const people = groups.flatMap((g) => g.people);
 const stories = groups.flatMap((g) => g.stories);
 
 const words = (html) => html.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
-// Spread publish dates over recent days, each at 07:00 UTC.
-const publishedAt = (daysAgo) => {
-  const d = new Date();
-  d.setUTCHours(7, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() - daysAgo);
-  return d.toISOString();
-};
+// Publish dates are real: a story keeps the date it first went live. New stories are
+// dated now, a few minutes apart (by daysAgo) so the home page keeps their order.
+// Never backdate; Google treats artificial dates as a spam signal.
+const { data: existing } = await db.from("stories").select("slug, published_at");
+const firstPublished = Object.fromEntries((existing ?? []).map((s) => [s.slug, s.published_at]));
+const now = Date.now();
+const publishedAt = (slug, order) => firstPublished[slug] ?? new Date(now - order * 5 * 60_000).toISOString();
 
 const { error: pErr } = await db.from("people").upsert(people, { onConflict: "slug", defaultToNull: false });
 if (pErr) throw pErr;
@@ -44,10 +45,12 @@ const rows = stories.map((s) => ({
   author_id: personId.timx ?? null,
   guest_id: personId[s.guest] ?? null,
   tags: s.tags,
+  seo_title: seo[s.slug]?.title ?? null,
+  seo_description: seo[s.slug]?.description ?? null,
   featured: Boolean(s.featured),
   reading_minutes: Math.max(1, Math.round(words(s.body) / 230)),
   status: "published",
-  published_at: publishedAt(s.daysAgo),
+  published_at: publishedAt(s.slug, s.daysAgo),
 }));
 
 const { error: sErr } = await db.from("stories").upsert(rows, { onConflict: "slug", defaultToNull: false });

@@ -1,4 +1,4 @@
-import { SITE, absoluteUrl } from "./site";
+import { SITE, absoluteUrl, storyImage } from "./site";
 import { isoDuration, stripHtml } from "./format";
 import type { EpisodeWithRefs, Person, StoryWithRefs } from "./types";
 
@@ -53,7 +53,7 @@ export const articleSchema = (story: StoryWithRefs) => ({
   "@type": "NewsArticle",
   headline: story.title,
   description: story.seo_description ?? story.dek ?? undefined,
-  image: story.cover_url ? [story.cover_url] : [absoluteUrl(SITE.defaultOgImage)],
+  image: [storyImage(story)],
   datePublished: story.published_at,
   dateModified: story.updated_at,
   mainEntityOfPage: absoluteUrl(`/stories/${story.slug}`),

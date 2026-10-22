@@ -34,3 +34,7 @@ export const NAV = [
 ] as const;
 
 export const absoluteUrl = (path: string) => new URL(path, SITE.url).toString();
+
+// Social card for a story: its cover photo if it has one, else the generated card.
+export const storyImage = (story: { slug: string; cover_url: string | null }) =>
+  story.cover_url ?? absoluteUrl(`/og/stories/${story.slug}.png`);

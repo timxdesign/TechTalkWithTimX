@@ -10,7 +10,7 @@ import NewsletterCTA from "../../components/newsletter/NewsletterCTA.astro";
 import { getEpisodeForStory, getRelatedStories, getStoryBySlug } from "../../lib/content";
 import { episodeLabel, formatDate, formatDuration } from "../../lib/format";
 import { articleSchema, breadcrumbSchema } from "../../lib/schema";
-import { absoluteUrl } from "../../lib/site";
+import { absoluteUrl, storyImage } from "../../lib/site";
 import { cachePage } from "../../lib/cache";
 
 const { slug = "" } = Astro.params;
@@ -29,8 +29,8 @@ const updated =
 <BaseLayout
   title={story.seo_title ?? story.title}
   description={story.seo_description ?? story.dek ?? undefined}
-  image={story.cover_url}
-  imageAlt={story.cover_alt}
+  image={storyImage(story)}
+  imageAlt={story.cover_alt ?? story.title}
   type="article"
   publishedTime={story.published_at}
   modifiedTime={story.updated_at}

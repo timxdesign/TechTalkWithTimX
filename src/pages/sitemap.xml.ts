@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { supabase } from "../lib/supabase";
-import { absoluteUrl } from "../lib/site";
+import { absoluteUrl, storyImage } from "../lib/site";
 
 const STATIC = [
   "/",
@@ -29,14 +29,17 @@ export const GET: APIRoute = async () => {
 
   const urls: { loc: string; lastmod?: string; image?: string | null }[] = [
     ...STATIC.map((p) => ({ loc: absoluteUrl(p) })),
-    ...(stories.data ?? []).map((s) => ({ loc: absoluteUrl(`/stories/${s.slug}`), lastmod: s.updated_at, image: s.cover_url })),
+    ...(stories.data ?? []).map((s) => ({ loc: absoluteUrl(`/stories/${s.slug}`), lastmod: s.updated_at, image: storyImage(s) })),
     ...(episodes.data ?? []).map((e) => ({ loc: absoluteUrl(`/podcast/${e.slug}`), lastmod: e.updated_at })),
     ...(people.data ?? []).map((p) => ({ loc: absoluteUrl(`/people/${p.slug}`), lastmod: p.updated_at })),
     ...(series.data ?? []).map((s) => ({ loc: absoluteUrl(`/series/${s.slug}`) })),
     ...(issues.data ?? []).map((i) => ({ loc: absoluteUrl(`/newsletter/archive/${i.slug}`), lastmod: i.sent_at })),
   ];
 
-  const tags = new Set((stories.data ?? []).flatMap((s) => s.tags as string[]));
+  // Only topics with at least two stories are indexable (see topics/[tag].astro).
+  const tagCounts = new Map<string, number>();
+  for (const t of (stories.data ?? []).flatMap((s) => s.tags as string[])) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+  const tags = [...tagCounts].filter(([, n]) => n >= 2).map(([t]) => t);
   for (const t of tags) urls.push({ loc: absoluteUrl(`/topics/${encodeURIComponent(t)}`) });
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

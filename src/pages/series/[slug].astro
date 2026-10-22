@@ -18,7 +18,7 @@ const [lead, ...rest] = stories;
 
 <BaseLayout
   title={series.name}
-  description={series.description ?? `${series.name}: a series from Tech Talk with TimX.`}
+  description={`${series.description ? `${series.description} ` : ""}Read every ${series.name} story from Tech Talk with TimX: founders and builders on what they made and learned.`}
   schema={[
     breadcrumbSchema([
       { name: "Home", path: "/" },

@@ -33,20 +33,31 @@ const {
   canonicalPath,
 } = Astro.props;
 
-const fullTitle = title ? `${title} | ${SITE.name}` : `${SITE.name}: ${SITE.tagline}`;
-const canonical = new URL(canonicalPath ?? Astro.url.pathname, SITE.url).toString();
+// Google shows roughly 60 characters of a title, so long headlines drop the site suffix.
+const suffixed = title ? `${title} | ${SITE.name}` : `${SITE.name}: ${SITE.tagline}`;
+const fullTitle = title && suffixed.length > 62 ? title : suffixed;
+// Snippets are cut around 160 characters; trim on a word boundary instead.
+const clamp = (text: string, max = 160) => {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  return clean.slice(0, clean.lastIndexOf(" ", max - 1)).replace(/[\s,;:.]+$/, "") + "…";
+};
+const metaDescription = clamp(description);
+// Prerendered pages are built as /about.html but served at /about.
+const path = (canonicalPath ?? Astro.url.pathname).replace(/(\/index)?\.html$/, "") || "/";
+const canonical = new URL(path, SITE.url).toString();
 const ogImage = new URL(image || SITE.defaultOgImage, SITE.url).toString();
 ---
 
 <title>{fullTitle}</title>
-<meta name="description" content={description} />
+<meta name="description" content={metaDescription} />
 <link rel="canonical" href={canonical} />
-<meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1"} />
+<meta name="robots" content={noindex ? "noindex, follow" : "index, follow, max-image-preview:large, max-snippet:-1"} />
 
 <meta property="og:site_name" content={SITE.name} />
 <meta property="og:type" content={type} />
 <meta property="og:title" content={title ?? fullTitle} />
-<meta property="og:description" content={description} />
+<meta property="og:description" content={metaDescription} />
 <meta property="og:url" content={canonical} />
 <meta property="og:image" content={ogImage} />
 {imageAlt && <meta property="og:image:alt" content={imageAlt} />}
@@ -59,7 +70,7 @@ const ogImage = new URL(image || SITE.defaultOgImage, SITE.url).toString();
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content={SITE.twitter} />
 <meta name="twitter:title" content={title ?? fullTitle} />
-<meta name="twitter:description" content={description} />
+<meta name="twitter:description" content={metaDescription} />
 <meta name="twitter:image" content={ogImage} />
 
 <link rel="alternate" type="application/rss+xml" title={`${SITE.name}: Stories`} href="/rss.xml" />
