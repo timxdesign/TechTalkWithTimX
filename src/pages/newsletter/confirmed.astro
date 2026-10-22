@@ -1,0 +1,20 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+export const prerender = true;
+---
+
+<BaseLayout title="You're subscribed" noindex>
+  <section class="container-editorial py-28 text-center md:py-40">
+    <p class="eyebrow" data-intro style="--d:.15s">Confirmed</p>
+    <h1 class="display mx-auto mt-5 max-w-4xl text-[clamp(3rem,8vw,7rem)]" data-intro>
+      You're in. <span class="serif-italic">See you tomorrow morning.</span>
+    </h1>
+    <p class="mx-auto mt-8 max-w-xl font-serif text-xl text-ink-2" data-intro style="--d:.15s">
+      Your first issue arrives tomorrow. Add our address to your contacts so it lands in your inbox, not promotions.
+    </p>
+    <div class="mt-10 flex flex-wrap justify-center gap-3" data-intro style="--d:.15s">
+      <a href="/stories" class="btn-ink">Start reading</a>
+      <a href="/podcast" class="btn-line">Listen to the podcast</a>
+    </div>
+  </section>
+</BaseLayout>

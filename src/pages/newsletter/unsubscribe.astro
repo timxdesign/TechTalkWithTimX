@@ -1,0 +1,31 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+const token = Astro.url.searchParams.get("token") ?? "";
+const done = Astro.url.searchParams.has("done");
+---
+
+<BaseLayout title="Unsubscribe" noindex>
+  <section class="container-editorial max-w-3xl py-28 md:py-36">
+    {
+      done ? (
+        <>
+          <p class="eyebrow">Unsubscribed</p>
+          <h1 class="display mt-5 text-5xl sm:text-6xl">You won't hear from us again.</h1>
+          <p class="mt-6 font-serif text-xl text-ink-2">
+            Sorry to see you go. If you change your mind, you can <a href="/newsletter" class="underline">resubscribe any time</a>.
+          </p>
+        </>
+      ) : (
+        <>
+          <p class="eyebrow">Newsletter</p>
+          <h1 class="display mt-5 text-5xl sm:text-6xl">Unsubscribe from the daily brief?</h1>
+          <form method="post" action="/api/newsletter/unsubscribe" class="mt-10" data-astro-reload>
+            <input type="hidden" name="token" value={token} />
+            <button type="submit" class="btn-ink" disabled={!token}>Yes, unsubscribe me</button>
+          </form>
+          {!token && <p class="mt-4 text-sm text-ink-3">Use the unsubscribe link at the bottom of any newsletter email.</p>}
+        </>
+      )
+    }
+  </section>
+</BaseLayout>

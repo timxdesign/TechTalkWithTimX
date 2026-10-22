@@ -1,0 +1,21 @@
+---
+// The TTT mark from assets/logo/ttt-logo.svg. Blocks use the ink colour and the
+// T's use the paper colour, so the mark inverts cleanly in dark mode.
+interface Props {
+  class?: string;
+  /** Paper-coloured blocks with ink T's, for use on black panels. */
+  inverted?: boolean;
+}
+const { class: className, inverted = false } = Astro.props;
+const block = inverted ? "var(--paper)" : "var(--ink)";
+const letter = inverted ? "var(--ink)" : "var(--paper)";
+---
+
+<svg viewBox="0 0 474 145" class={className} role="img" aria-label="Tech Talk with TimX">
+  <rect width="144.086" height="144.086" fill={block}></rect>
+  <path d="M110.852 28.3027V49.2726H83.4367V117.422H58.2909V49.2726H30.8756V28.3027H110.852Z" fill={letter}></path>
+  <rect width="144.086" height="144.086" transform="translate(164.957)" fill={block}></rect>
+  <path d="M275.809 28.3027V49.2726H248.394V117.422H223.248V49.2726H195.833V28.3027H275.809Z" fill={letter}></path>
+  <rect width="144.086" height="144.086" transform="translate(329.914)" fill={block}></rect>
+  <path d="M440.766 28.3027V49.2726H413.35V117.422H388.205V49.2726H360.789V28.3027H440.766Z" fill={letter}></path>
+</svg>

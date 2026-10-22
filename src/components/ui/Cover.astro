@@ -1,0 +1,73 @@
+---
+// A story/episode cover. With no photo it renders a typographic black panel
+// (series name + oversized initial on film grain) so the grid never looks empty.
+interface Props {
+  src?: string | null;
+  alt?: string | null;
+  title: string;
+  kicker?: string | null;
+  ratio?: "wide" | "landscape" | "square" | "portrait";
+  eager?: boolean;
+  parallax?: boolean;
+  class?: string;
+  sizes?: string;
+}
+
+const {
+  src,
+  alt,
+  title,
+  kicker,
+  ratio = "landscape",
+  eager = false,
+  parallax = false,
+  class: className,
+  sizes = "(min-width: 1024px) 50vw, 100vw",
+} = Astro.props;
+
+const aspect = {
+  wide: "aspect-[16/9]",
+  landscape: "aspect-[4/3]",
+  square: "aspect-square",
+  portrait: "aspect-[4/5]",
+}[ratio];
+
+const dims = {
+  wide: [1600, 900],
+  landscape: [1200, 900],
+  square: [1000, 1000],
+  portrait: [960, 1200],
+}[ratio];
+
+// Pick a stable glyph from the title so each fallback cover looks distinct.
+const glyph = title.replace(/[^A-Za-z0-9]/g, "").charAt(0).toUpperCase() || "T";
+---
+
+<div class:list={["@container relative overflow-hidden bg-ink", aspect, className]}>
+  {
+    src ? (
+      <img
+        src={src}
+        alt={alt ?? ""}
+        width={dims[0]}
+        height={dims[1]}
+        loading={eager ? "eager" : "lazy"}
+        fetchpriority={eager ? "high" : "auto"}
+        decoding="async"
+        sizes={sizes}
+        class:list={[
+          "absolute inset-0 h-full w-full object-cover grayscale-[15%] transition-transform duration-[1.2s] ease-[var(--ease-editorial)] group-hover:scale-[1.03]",
+          parallax && "scale-[1.14]",
+        ]}
+        data-parallax={parallax ? "" : undefined}
+      />
+    ) : (
+      <div class="grain absolute inset-0 flex flex-col justify-between p-[6cqw] text-paper" aria-hidden="true">
+        <span class="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-paper/60">{kicker === undefined ? "Tech Talk with TimX" : kicker}</span>
+        <span class="display -mb-[0.12em] self-end text-[55cqw] leading-[0.75] text-paper/95 transition-transform duration-[1.2s] ease-[var(--ease-editorial)] group-hover:-translate-y-1">
+          {glyph}
+        </span>
+      </div>
+    )
+  }
+</div>

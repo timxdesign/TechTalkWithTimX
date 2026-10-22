@@ -1,0 +1,175 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Cover from "../../components/ui/Cover.astro";
+import Avatar from "../../components/ui/Avatar.astro";
+import StoryCard from "../../components/story/StoryCard.astro";
+import ShareLinks from "../../components/story/ShareLinks.astro";
+import PlayButton from "../../components/podcast/PlayButton.astro";
+import SectionHeader from "../../components/ui/SectionHeader.astro";
+import NewsletterCTA from "../../components/newsletter/NewsletterCTA.astro";
+import { getEpisodeForStory, getRelatedStories, getStoryBySlug } from "../../lib/content";
+import { episodeLabel, formatDate, formatDuration } from "../../lib/format";
+import { articleSchema, breadcrumbSchema } from "../../lib/schema";
+import { absoluteUrl } from "../../lib/site";
+import { cachePage } from "../../lib/cache";
+
+const { slug = "" } = Astro.params;
+const story = await getStoryBySlug(slug);
+if (!story) return Astro.rewrite("/404");
+
+cachePage(Astro, ["stories", `story:${story.slug}`]);
+
+const [episode, related] = await Promise.all([getEpisodeForStory(story.id), getRelatedStories(story)]);
+const kicker = story.series?.name ?? story.tags[0] ?? "Story";
+const url = absoluteUrl(`/stories/${story.slug}`);
+const updated =
+  story.published_at && new Date(story.updated_at).getTime() - new Date(story.published_at).getTime() > 86_400_000;
+---
+
+<BaseLayout
+  title={story.seo_title ?? story.title}
+  description={story.seo_description ?? story.dek ?? undefined}
+  image={story.cover_url}
+  imageAlt={story.cover_alt}
+  type="article"
+  publishedTime={story.published_at}
+  modifiedTime={story.updated_at}
+  section={story.series?.name}
+  tags={story.tags}
+  schema={[
+    articleSchema(story),
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Stories", path: "/stories" },
+      { name: story.title, path: `/stories/${story.slug}` },
+    ]),
+  ]}
+>
+  <div class="fixed inset-x-0 top-16 z-30 h-[2px] origin-left scale-x-0 bg-ink" data-progress aria-hidden="true"></div>
+
+  <article>
+    <header class="container-editorial pt-12 md:pt-20">
+      <nav aria-label="Breadcrumb" class="eyebrow flex flex-wrap gap-2" data-intro style="--d:.15s">
+        <a href="/stories" class="hover:text-ink">Stories</a>
+        <span aria-hidden="true">/</span>
+        {story.series ? <a href={`/series/${story.series.slug}`} class="hover:text-ink">{story.series.name}</a> : <span>{kicker}</span>}
+      </nav>
+      <h1 class="display mt-6 max-w-5xl text-[clamp(2.6rem,6.5vw,6rem)]" data-intro>{story.title}</h1>
+      {story.dek && <p class="mt-8 max-w-3xl font-serif text-[clamp(1.25rem,2vw,1.6rem)] leading-snug text-ink-2" data-intro style="--d:0.2s">{story.dek}</p>}
+
+      <div class="mt-10 flex flex-col gap-6 border-y border-rule py-5 sm:flex-row sm:items-center sm:justify-between" data-intro style="--d:0.3s">
+        <div class="flex items-center gap-4">
+          {story.author && <Avatar name={story.author.name} src={story.author.avatar_url} size={44} />}
+          <div class="text-sm">
+            {story.author && (
+              <p>
+                By <a href={`/people/${story.author.slug}`} class="font-semibold underline-offset-4 hover:underline">{story.author.name}</a>
+              </p>
+            )}
+            <p class="eyebrow mt-1">
+              <time datetime={story.published_at ?? undefined}>{formatDate(story.published_at)}</time>
+              {updated && <> · Updated <time datetime={story.updated_at}>{formatDate(story.updated_at, "short")}</time></>}
+              {story.reading_minutes && <> · {story.reading_minutes} min read</>}
+            </p>
+          </div>
+        </div>
+        {
+          episode?.audio_url && (
+            <PlayButton slug={episode.slug} title={episode.title} audio={episode.audio_url} cover={episode.cover_url} label={episodeLabel(episode)} size="sm" text={`Listen · ${formatDuration(episode.duration_seconds)}`} />
+          )
+        }
+      </div>
+    </header>
+
+    <figure class="container-editorial mt-12">
+      <Cover src={story.cover_url} alt={story.cover_alt} title={story.title} kicker={kicker} ratio="wide" eager parallax sizes="(min-width: 1320px) 1320px, 100vw" />
+      {story.cover_alt && story.cover_url && <figcaption class="eyebrow mt-3">{story.cover_alt}</figcaption>}
+    </figure>
+
+    <div class="container-editorial mt-16 grid gap-12 lg:grid-cols-12">
+      <aside class="hidden lg:col-span-3 lg:block">
+        {
+          story.guest && (
+            <div class="sticky top-28 border-t-2 border-ink pt-5">
+              <p class="eyebrow">In this story</p>
+              <a href={`/people/${story.guest.slug}`} class="group mt-4 flex items-center gap-3">
+                <Avatar name={story.guest.name} src={story.guest.avatar_url} size={48} />
+                <span>
+                  <span class="block font-semibold"><span class="link-draw">{story.guest.name}</span></span>
+                  <span class="block text-sm text-ink-3">{[story.guest.role, story.guest.company].filter(Boolean).join(", ")}</span>
+                </span>
+              </a>
+              {story.guest.bio && <p class="mt-4 font-serif text-[0.98rem] leading-relaxed text-ink-2">{story.guest.bio}</p>}
+            </div>
+          )
+        }
+      </aside>
+
+      <div class="min-w-0 lg:col-span-7">
+        <div class="prose-editorial dropcap" set:html={story.body_html ?? ""} />
+
+        {
+          story.tags.length > 0 && (
+            <ul class="mt-14 flex flex-wrap gap-2" aria-label="Topics">
+              {story.tags.map((tag) => (
+                <li>
+                  <a href={`/topics/${encodeURIComponent(tag)}`} class="inline-block rounded-full bg-paper-2 px-3.5 py-1.5 text-sm font-medium transition-colors hover:bg-ink hover:text-paper">
+                    {tag}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+
+        <div class="mt-10 border-t border-rule pt-6">
+          <ShareLinks url={url} title={story.title} />
+        </div>
+
+        {
+          story.guest && (
+            <a href={`/people/${story.guest.slug}`} class="group mt-12 flex gap-5 rounded-xl bg-paper-2 p-6 lg:hidden">
+              <Avatar name={story.guest.name} src={story.guest.avatar_url} size={56} />
+              <span>
+                <span class="eyebrow block">In this story</span>
+                <span class="mt-1 block font-semibold">{story.guest.name}</span>
+                <span class="block text-sm text-ink-3">{[story.guest.role, story.guest.company].filter(Boolean).join(", ")}</span>
+              </span>
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </article>
+
+  {
+    related.length > 0 && (
+      <section class="container-editorial mt-28" aria-label="Related stories">
+        <SectionHeader title="Keep reading" href="/stories" linkText="All stories" />
+        <div class="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {related.map((s, i) => <StoryCard story={s} index={i} />)}
+        </div>
+      </section>
+    )
+  }
+
+  <NewsletterCTA source={`story:${story.slug}`} />
+</BaseLayout>
+
+<script>
+  // Reading progress bar under the header.
+  document.addEventListener("astro:page-load", () => {
+    const bar = document.querySelector<HTMLElement>("[data-progress]");
+    const body = document.querySelector<HTMLElement>(".prose-editorial");
+    if (!bar || !body) return;
+    const update = () => {
+      const rect = body.getBoundingClientRect();
+      const total = rect.height - window.innerHeight * 0.6;
+      const p = Math.min(1, Math.max(0, -rect.top / Math.max(total, 1)));
+      bar.style.transform = `scaleX(${p})`;
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    document.addEventListener("astro:before-swap", () => window.removeEventListener("scroll", update), { once: true });
+  });
+</script>

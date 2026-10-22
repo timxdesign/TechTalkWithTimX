@@ -1,0 +1,28 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import NewsletterCTA from "../../../components/newsletter/NewsletterCTA.astro";
+import { getNewsletterIssue } from "../../../lib/content";
+import { formatDate } from "../../../lib/format";
+import { cachePage } from "../../../lib/cache";
+
+const issue = await getNewsletterIssue(Astro.params.slug ?? "");
+if (!issue) return Astro.rewrite("/404");
+cachePage(Astro, ["newsletter"], 3600);
+---
+
+<BaseLayout title={issue.subject} description={issue.preview_text ?? undefined} type="article" publishedTime={issue.sent_at}>
+  <section class="container-editorial max-w-3xl pt-14 md:pt-20">
+    <a href="/newsletter/archive" class="eyebrow hover:text-ink">← Archive</a>
+    <p class="eyebrow mt-8">{formatDate(issue.sent_at)}</p>
+    <h1 class="display mt-4 text-5xl sm:text-6xl">{issue.subject}</h1>
+  </section>
+  <div class="container-editorial mt-12 max-w-3xl">
+    <iframe
+      srcdoc={issue.html ?? ""}
+      title={issue.subject}
+      class="h-[2400px] w-full rounded-xl border border-rule bg-white"
+      sandbox="allow-popups allow-popups-to-escape-sandbox"
+      loading="lazy"></iframe>
+  </div>
+  <NewsletterCTA source={`archive:${issue.slug}`} />
+</BaseLayout>

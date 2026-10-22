@@ -1,0 +1,80 @@
+---
+import "../styles/global.css";
+import Logo from "../components/layout/Logo.astro";
+
+interface Props {
+  title: string;
+  actions?: boolean;
+}
+const { title } = Astro.props;
+const editor = Astro.locals.editor;
+const path = Astro.url.pathname;
+const nav = [
+  { label: "Dashboard", href: "/studio" },
+  { label: "Stories", href: "/studio/stories" },
+  { label: "Episodes", href: "/studio/episodes" },
+  { label: "People", href: "/studio/people" },
+  { label: "Submissions", href: "/studio/submissions" },
+  { label: "Newsletter", href: "/studio/newsletter" },
+];
+const active = (href: string) => (href === "/studio" ? path === "/studio" : path.startsWith(href));
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · Studio · Tech Talk with TimX</title>
+    <script is:inline>
+      try {
+        var t = localStorage.getItem("ttt-theme");
+        document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      } catch (e) {}
+    </script>
+  </head>
+  <body class="bg-paper-2 text-ink">
+    <div class="flex min-h-dvh flex-col lg:flex-row">
+      <aside class="border-b border-rule bg-paper lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:shrink-0 lg:border-r lg:border-b-0">
+        <div class="flex h-full flex-col">
+          <a href="/studio" class="flex items-center gap-3 px-5 py-5">
+            <Logo class="h-5 w-auto" />
+            <span class="font-mono text-[0.7rem] uppercase tracking-widest text-ink-3">Studio</span>
+          </a>
+          <nav aria-label="Studio" class="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:pb-0">
+            {
+              nav.map((item) => (
+                <a
+                  href={item.href}
+                  class:list={[
+                    "shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    active(item.href) ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2",
+                  ]}
+                  aria-current={active(item.href) ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              ))
+            }
+          </nav>
+          <div class="mt-auto hidden space-y-2 border-t border-rule p-4 text-sm lg:block">
+            <a href="/" target="_blank" rel="noopener" class="block text-ink-3 hover:text-ink">View site ↗</a>
+            <p class="truncate text-ink-3" title={editor?.email}>{editor?.email}</p>
+            <form method="post" action="/api/studio/logout">
+              <button type="submit" class="text-ink-3 underline-offset-4 hover:text-ink hover:underline">Sign out</button>
+            </form>
+          </div>
+        </div>
+      </aside>
+      <main class="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:px-10">
+        <header class="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <h1 class="text-3xl font-extrabold tracking-tight">{title}</h1>
+          <slot name="actions" />
+        </header>
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

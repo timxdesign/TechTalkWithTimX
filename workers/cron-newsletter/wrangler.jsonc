@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "techtalk-newsletter-cron",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-12",
+  // 06:00 UTC = 07:00 in Lagos (WAT). Change to suit your audience.
+  "triggers": { "crons": ["0 6 * * *"] },
+  "vars": { "SITE_URL": "https://techtalkwithtimx.com" },
+  "observability": { "enabled": true }
+  // Secret: npx wrangler secret put CRON_SECRET --config workers/cron-newsletter/wrangler.jsonc
+}

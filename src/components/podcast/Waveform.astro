@@ -1,0 +1,26 @@
+---
+// Decorative waveform, generated from the episode slug so it's stable per episode.
+interface Props {
+  seed: string;
+  bars?: number;
+  class?: string;
+}
+const { seed, bars = 72, class: className } = Astro.props;
+
+let h = 2166136261;
+for (const c of seed) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+const rand = () => {
+  h ^= h << 13;
+  h ^= h >>> 17;
+  h ^= h << 5;
+  return ((h >>> 0) % 1000) / 1000;
+};
+const heights = Array.from({ length: bars }, (_, i) => {
+  const envelope = Math.sin((i / bars) * Math.PI) * 0.55 + 0.45;
+  return Math.round((0.18 + rand() * 0.82) * envelope * 100);
+});
+---
+
+<div class:list={["flex h-20 items-center gap-[3px]", className]} aria-hidden="true">
+  {heights.map((v) => <span class="block flex-1 rounded-full bg-current" style={`height:${v}%`}></span>)}
+</div>

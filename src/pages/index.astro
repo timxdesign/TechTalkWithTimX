@@ -1,0 +1,194 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import StoryCard from "../components/story/StoryCard.astro";
+import PlayButton from "../components/podcast/PlayButton.astro";
+import Waveform from "../components/podcast/Waveform.astro";
+import SectionHeader from "../components/ui/SectionHeader.astro";
+import Avatar from "../components/ui/Avatar.astro";
+import NewsletterCTA from "../components/newsletter/NewsletterCTA.astro";
+import {
+  getEpisodes,
+  getFeaturedGuests,
+  getFeaturedStories,
+  getLatestStories,
+  getSeriesList,
+} from "../lib/content";
+import { episodeLabel, formatDuration } from "../lib/format";
+import { cachePage } from "../lib/cache";
+import { podcastSeriesSchema } from "../lib/schema";
+
+cachePage(Astro, ["stories", "episodes", "people", "series"]);
+
+const [{ stories: latest }, featured, episodes, guests, seriesList] = await Promise.all([
+  getLatestStories({ limit: 10 }),
+  getFeaturedStories(1),
+  getEpisodes({ limit: 4 }),
+  getFeaturedGuests(4),
+  getSeriesList(),
+]);
+
+const lead = featured[0] ?? latest[0];
+const rest = latest.filter((s) => s.id !== lead?.id);
+const grid = rest.slice(0, 3);
+const more = rest.slice(3, 8);
+const [latestEpisode, ...olderEpisodes] = episodes;
+---
+
+<BaseLayout schema={[podcastSeriesSchema()]}>
+  <!-- Masthead -->
+  <section class="container-editorial border-b border-rule pt-14 pb-12 md:pt-20">
+    <div class="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+      <h1 class="display max-w-4xl text-[clamp(2.8rem,8vw,7.5rem)]" data-intro>
+        The stories behind what's <span class="serif-italic">being built.</span>
+      </h1>
+      <p class="max-w-xs font-serif text-lg text-ink-2 md:pb-3" data-intro style="--d:0.3s">
+        Founders and builders on the journey, the product and the hard-won lessons in between.
+      </p>
+    </div>
+  </section>
+
+  {
+    lead ? (
+      <section class="container-editorial pt-12" aria-label="Cover story">
+        <StoryCard story={lead} variant="lead" eager />
+      </section>
+    ) : (
+      <section class="container-editorial py-24 text-center">
+        <p class="eyebrow">Coming soon</p>
+        <p class="display mt-4 text-4xl">The first stories are on their way.</p>
+      </section>
+    )
+  }
+
+  {
+    grid.length > 0 && (
+      <section class="container-editorial mt-24" aria-labelledby="latest">
+        <SectionHeader title="Latest" kicker="Stories" href="/stories" linkText="All stories" />
+        <div class="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {grid.map((story, i) => <StoryCard story={story} index={i} />)}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    latestEpisode && (
+      <section class="mt-28" aria-labelledby="podcast-feature">
+        <div class="grain bg-ink text-paper">
+          <div class="container-editorial grid gap-12 py-20 lg:grid-cols-12 lg:py-28">
+            <div class="lg:col-span-7">
+              <p class="eyebrow !text-paper/55" data-reveal>
+                The podcast · {episodeLabel(latestEpisode)} · {formatDuration(latestEpisode.duration_seconds)}
+              </p>
+              <h2 id="podcast-feature" class="display mt-6 text-4xl sm:text-6xl" data-reveal>
+                <a href={`/podcast/${latestEpisode.slug}`} class="link-draw">{latestEpisode.title}</a>
+              </h2>
+              {latestEpisode.dek && <p class="mt-6 max-w-2xl font-serif text-xl text-paper/70" data-reveal>{latestEpisode.dek}</p>}
+              <div class="mt-10 flex flex-wrap items-center gap-5" data-reveal>
+                <PlayButton
+                  slug={latestEpisode.slug}
+                  title={latestEpisode.title}
+                  audio={latestEpisode.audio_url}
+                  cover={latestEpisode.cover_url}
+                  label={episodeLabel(latestEpisode)}
+                  tone="paper"
+                />
+                <a href="/podcast" class="link-draw text-sm font-semibold">All episodes →</a>
+              </div>
+            </div>
+            <div class="flex flex-col justify-end lg:col-span-5" data-reveal>
+              <Waveform seed={latestEpisode.slug} class="text-paper/80" />
+              {latestEpisode.guest && (
+                <div class="mt-8 flex items-center gap-4 border-t border-paper/15 pt-6">
+                  <Avatar name={latestEpisode.guest.name} src={latestEpisode.guest.avatar_url} size={52} class="!bg-paper !text-ink" />
+                  <div>
+                    <p class="font-semibold">{latestEpisode.guest.name}</p>
+                    <p class="text-sm text-paper/60">{[latestEpisode.guest.role, latestEpisode.guest.company].filter(Boolean).join(", ")}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    (more.length > 0 || olderEpisodes.length > 0) && (
+      <section class="container-editorial mt-28 grid gap-16 lg:grid-cols-12">
+        <div class="lg:col-span-8">
+          <SectionHeader title="More stories" href="/stories" />
+          {more.map((story) => <StoryCard story={story} variant="list" />)}
+        </div>
+        <aside class="lg:col-span-4" aria-labelledby="more-listening">
+          <div class="lg:sticky lg:top-24">
+            <SectionHeader title="Listen" href="/podcast" linkText="Podcast" />
+            {olderEpisodes.length ? (
+              olderEpisodes.map((ep) => (
+                <article class="group border-t border-rule py-5 first-of-type:border-t-0 first-of-type:pt-0">
+                  <p class="eyebrow">{episodeLabel(ep)} · {formatDuration(ep.duration_seconds)}</p>
+                  <h3 class="headline mt-1.5 text-lg"><a href={`/podcast/${ep.slug}`} class="link-draw">{ep.title}</a></h3>
+                </article>
+              ))
+            ) : (
+              <p class="border-t border-rule py-5 font-serif text-ink-2">More episodes are on the way. Subscribe below so you don't miss them.</p>
+            )}
+          </div>
+        </aside>
+      </section>
+    )
+  }
+
+  {
+    guests.length > 0 && (
+      <section class="container-editorial mt-28" aria-labelledby="people">
+        <SectionHeader title="The people" kicker="Who's building" href="/people" linkText="Everyone" />
+        <div class="grid border-t border-l border-rule sm:grid-cols-2 lg:grid-cols-4">
+          {guests.map((p, i) => (
+            <a href={`/people/${p.slug}`} class="group flex flex-col border-r border-b border-rule bg-paper p-6 transition-colors hover:bg-paper-2" data-reveal data-reveal-delay={String(i * 0.06)}>
+              <Avatar name={p.name} src={p.avatar_url} size={64} />
+              <p class="headline mt-6 text-xl"><span class="link-draw">{p.name}</span></p>
+              <p class="mt-1 text-sm text-ink-3">{[p.role, p.company].filter(Boolean).join(", ")}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    seriesList.length > 0 && (
+      <section class="container-editorial mt-28" aria-labelledby="series">
+        <SectionHeader title="Series" kicker="Read by theme" />
+        <ul class="grid border-t border-ink sm:grid-cols-2">
+          {seriesList.map((s, i) => (
+            <li class="border-b border-rule sm:odd:border-r sm:odd:pr-8 sm:even:pl-8" data-reveal data-reveal-delay={String((i % 2) * 0.06)}>
+              <a href={`/series/${s.slug}`} class="group flex items-baseline gap-5 py-7">
+                <span class="font-mono text-xs text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+                <span>
+                  <span class="display block text-3xl sm:text-4xl"><span class="link-draw">{s.name}</span></span>
+                  {s.description && <span class="mt-2 block font-serif text-ink-2">{s.description}</span>}
+                </span>
+                <span class="ml-auto text-xl transition-transform duration-500 group-hover:translate-x-1" aria-hidden="true">→</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <NewsletterCTA source="home" />
+
+  <section class="container-editorial" aria-labelledby="share">
+    <div class="grid items-end gap-10 border-t-2 border-ink pt-12 md:grid-cols-12">
+      <h2 id="share" class="display text-4xl sm:text-6xl md:col-span-8" data-reveal>
+        Building something? <span class="serif-italic">Tell us the story.</span>
+      </h2>
+      <div class="md:col-span-4 md:text-right" data-reveal>
+        <a href="/share-your-story" class="btn-ink !px-7 !py-4">Share your story →</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

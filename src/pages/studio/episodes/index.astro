@@ -1,0 +1,19 @@
+---
+import StudioLayout from "../../../layouts/StudioLayout.astro";
+import ContentTable from "../../../components/studio/ContentTable.astro";
+import { episodeLabel } from "../../../lib/format";
+
+const { data } = await Astro.locals.supabase!
+  .from("episodes")
+  .select("id, title, status, published_at, updated_at, season, number, audio_url, guest:people!episodes_guest_id_fkey(name)")
+  .order("published_at", { ascending: false, nullsFirst: true });
+const rows = (data ?? []).map((e: any) => ({
+  ...e,
+  meta: [episodeLabel(e), e.guest?.name, e.audio_url ? null : "No audio yet"].filter(Boolean).join(" · "),
+}));
+---
+
+<StudioLayout title="Episodes">
+  <a slot="actions" href="/studio/episodes/new" class="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-paper">New episode</a>
+  <ContentTable rows={rows} base="/studio/episodes" empty="No episodes yet." />
+</StudioLayout>

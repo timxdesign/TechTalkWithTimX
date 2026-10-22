@@ -1,0 +1,47 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import StorySubmitForm from "../components/forms/StorySubmitForm";
+
+export const prerender = true;
+
+const steps = [
+  { n: "01", title: "Tell us", text: "A few honest paragraphs about what you're building and the moment you'd want to talk about." },
+  { n: "02", title: "We read every one", text: "Our editors review each submission and reply within two weeks if it's a fit." },
+  { n: "03", title: "We tell it properly", text: "A long-form story, a podcast conversation, or both, edited with you and published with care." },
+];
+---
+
+<BaseLayout
+  title="Share your story"
+  description="Founder, engineer, designer, operator: if you're building something, we want to hear the story. Apply to be featured on Tech Talk with TimX."
+>
+  <section class="container-editorial grid gap-16 pt-14 pb-24 md:pt-20 lg:grid-cols-12">
+    <div class="lg:col-span-5">
+      <div class="lg:sticky lg:top-28">
+        <p class="eyebrow" data-intro style="--d:.15s">Be featured</p>
+        <h1 class="display mt-4 text-[clamp(3rem,7vw,6.5rem)]" data-intro>
+          Building something? <span class="serif-italic">Tell us.</span>
+        </h1>
+        <p class="mt-8 max-w-md font-serif text-xl text-ink-2" data-intro style="--d:.15s">
+          We feature founders and builders at every stage, from first commit to IPO. What matters is that the story is real.
+        </p>
+        <ol class="mt-12 space-y-7" data-intro style="--d:.15s">
+          {
+            steps.map((s) => (
+              <li class="grid grid-cols-[3rem_1fr] gap-2 border-t border-rule pt-5">
+                <span class="font-mono text-xs text-ink-3">{s.n}</span>
+                <span>
+                  <span class="block font-bold">{s.title}</span>
+                  <span class="mt-1 block text-ink-2">{s.text}</span>
+                </span>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </div>
+    <div class="lg:col-span-7 lg:pt-4">
+      <StorySubmitForm client:load />
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,69 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import StoryCard from "../components/story/StoryCard.astro";
+import EpisodeCard from "../components/podcast/EpisodeCard.astro";
+import Avatar from "../components/ui/Avatar.astro";
+import { search } from "../lib/content";
+
+const q = (Astro.url.searchParams.get("q") ?? "").trim();
+const results = q ? await search(q) : null;
+const count = results ? results.stories.length + results.episodes.length + results.people.length : 0;
+---
+
+<BaseLayout title={q ? `Search: ${q}` : "Search"} noindex>
+  <section class="container-editorial pt-14 md:pt-20">
+    <h1 class="display text-[clamp(3rem,8vw,7rem)]">Search</h1>
+    <form action="/search" method="get" role="search" class="mt-10 flex items-center gap-4 border-b-2 border-ink pb-3" data-astro-reload>
+      <label for="q" class="sr-only">Search stories, episodes and people</label>
+      <input
+        id="q"
+        name="q"
+        type="search"
+        value={q}
+        autofocus={!q}
+        placeholder="Founders, companies, topics…"
+        class="w-full bg-transparent text-2xl font-semibold outline-none placeholder:text-ink-3/60 sm:text-4xl"
+      />
+      <button type="submit" class="btn-ink shrink-0">Search</button>
+    </form>
+    {results && <p class="eyebrow mt-6" aria-live="polite">{count} {count === 1 ? "result" : "results"} for “{q}”</p>}
+  </section>
+
+  {
+    results && (
+      <div class="container-editorial mt-12 space-y-20">
+        {results.people.length > 0 && (
+          <section aria-label="People">
+            <h2 class="eyebrow mb-4">People</h2>
+            <ul class="flex flex-wrap gap-6">
+              {results.people.map((p) => (
+                <li>
+                  <a href={`/people/${p.slug}`} class="group flex items-center gap-3">
+                    <Avatar name={p.name} src={p.avatar_url} size={44} />
+                    <span>
+                      <span class="block font-semibold"><span class="link-draw">{p.name}</span></span>
+                      <span class="block text-sm text-ink-3">{[p.role, p.company].filter(Boolean).join(", ")}</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {results.stories.length > 0 && (
+          <section aria-label="Stories">
+            <h2 class="eyebrow mb-2">Stories</h2>
+            {results.stories.map((s) => <StoryCard story={s} variant="list" />)}
+          </section>
+        )}
+        {results.episodes.length > 0 && (
+          <section aria-label="Episodes">
+            <h2 class="eyebrow mb-2">Episodes</h2>
+            {results.episodes.map((ep) => <EpisodeCard episode={ep} />)}
+          </section>
+        )}
+        {count === 0 && <p class="font-serif text-xl text-ink-2">Nothing matched. Try a company name, a person or a topic like “fintech”.</p>}
+      </div>
+    )
+  }
+</BaseLayout>

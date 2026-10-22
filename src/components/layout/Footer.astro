@@ -1,0 +1,54 @@
+---
+import { NAV, SITE } from "../../lib/site";
+import Logo from "./Logo.astro";
+const year = new Date().getFullYear();
+const company = [
+  { label: "About", href: "/about" },
+  { label: "Editorial standards", href: "/editorial-standards" },
+  { label: "Advertise", href: "/advertise" },
+  { label: "Contact", href: "/contact" },
+];
+const legal = [
+  { label: "Privacy", href: "/privacy" },
+  { label: "Terms", href: "/terms" },
+  { label: "RSS", href: "/rss.xml" },
+  { label: "Podcast feed", href: "/podcast.xml" },
+];
+---
+
+<footer class="grain mt-32 bg-ink text-paper">
+  <div class="container-editorial pt-20 pb-10">
+    <div class="grid gap-14 md:grid-cols-12">
+      <div class="md:col-span-6">
+        <Logo class="h-9 w-auto" inverted />
+        <p class="display mt-10 max-w-lg text-4xl md:text-5xl">
+          {SITE.tagline.replace("built.", "")}<span class="serif-italic">built.</span>
+        </p>
+      </div>
+      <nav aria-label="Footer" class="grid grid-cols-2 gap-8 md:col-span-6 md:grid-cols-3">
+        <div>
+          <p class="eyebrow mb-4 !text-paper/50">Read & listen</p>
+          <ul class="space-y-2.5">
+            {NAV.map((item) => <li><a href={item.href} class="link-draw">{item.label}</a></li>)}
+          </ul>
+        </div>
+        <div>
+          <p class="eyebrow mb-4 !text-paper/50">Company</p>
+          <ul class="space-y-2.5">
+            {company.map((item) => <li><a href={item.href} class="link-draw">{item.label}</a></li>)}
+          </ul>
+        </div>
+        <div>
+          <p class="eyebrow mb-4 !text-paper/50">More</p>
+          <ul class="space-y-2.5">
+            {legal.map((item) => <li><a href={item.href} class="link-draw">{item.label}</a></li>)}
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="mt-20 flex flex-col gap-3 border-t border-paper/15 pt-6 text-sm text-paper/60 sm:flex-row sm:justify-between">
+      <span>© {year} {SITE.name}. All rights reserved.</span>
+      <a href="/share-your-story" class="link-draw text-paper">Building something? Tell us your story →</a>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,66 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import StoryCard from "../../components/story/StoryCard.astro";
+import EpisodeCard from "../../components/podcast/EpisodeCard.astro";
+import SectionHeader from "../../components/ui/SectionHeader.astro";
+import NewsletterCTA from "../../components/newsletter/NewsletterCTA.astro";
+import { getSeriesBySlug, getSeriesList } from "../../lib/content";
+import { breadcrumbSchema } from "../../lib/schema";
+import { cachePage } from "../../lib/cache";
+
+const { slug = "" } = Astro.params;
+const [result, allSeries] = await Promise.all([getSeriesBySlug(slug), getSeriesList()]);
+if (!result) return Astro.rewrite("/404");
+const { series, stories, episodes } = result;
+cachePage(Astro, ["series", "stories", "episodes"]);
+const [lead, ...rest] = stories;
+---
+
+<BaseLayout
+  title={series.name}
+  description={series.description ?? `${series.name}: a series from Tech Talk with TimX.`}
+  schema={[
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Stories", path: "/stories" },
+      { name: series.name, path: `/series/${series.slug}` },
+    ]),
+  ]}
+>
+  <section class="container-editorial pt-14 pb-10 md:pt-20">
+    <p class="eyebrow" data-intro style="--d:.15s">Series · {stories.length} {stories.length === 1 ? "story" : "stories"}</p>
+    <h1 class="display mt-4 text-[clamp(3.2rem,9vw,8.5rem)]" data-intro>{series.name}</h1>
+    {series.description && <p class="mt-6 max-w-2xl font-serif text-xl text-ink-2" data-intro style="--d:.15s">{series.description}</p>}
+    <nav aria-label="Series" class="mt-10 flex flex-wrap gap-2" data-intro style="--d:.15s">
+      <a href="/stories" class="rounded-full border border-rule px-4 py-2 text-sm font-medium hover:border-ink">All</a>
+      {
+        allSeries.map((s) => (
+          <a
+            href={`/series/${s.slug}`}
+            class:list={["rounded-full px-4 py-2 text-sm font-medium", s.id === series.id ? "bg-ink text-paper" : "border border-rule hover:border-ink"]}
+            aria-current={s.id === series.id ? "page" : undefined}
+          >
+            {s.name}
+          </a>
+        ))
+      }
+    </nav>
+  </section>
+
+  <div class="container-editorial">
+    {lead && <div class="border-t border-ink pt-12"><StoryCard story={lead} variant="lead" eager /></div>}
+    {rest.length > 0 && <div class="mt-20 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">{rest.map((s, i) => <StoryCard story={s} index={i} />)}</div>}
+    {stories.length === 0 && <p class="border-t border-ink py-24 text-center font-serif text-xl text-ink-2">The first {series.name} story is on its way.</p>}
+  </div>
+
+  {
+    episodes.length > 0 && (
+      <section class="container-editorial mt-24">
+        <SectionHeader title="Episodes in this series" />
+        {episodes.map((ep) => <EpisodeCard episode={ep} />)}
+      </section>
+    )
+  }
+
+  <NewsletterCTA source={`series:${series.slug}`} />
+</BaseLayout>

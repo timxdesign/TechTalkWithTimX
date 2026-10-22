@@ -1,0 +1,23 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+export const prerender = true;
+// NOTE: starting draft. Have it reviewed for your jurisdiction (e.g. NDPR/NDPA, GDPR) before launch.
+---
+
+<PageLayout title="Privacy policy" updated="22 October 2026" description="How Tech Talk with TimX collects, uses and protects your personal information.">
+  <p>This policy explains what personal information Tech Talk with TimX ("we") collects, why, and the choices you have.</p>
+  <h2>What we collect</h2>
+  <ul>
+    <li><strong>Newsletter:</strong> your email address and, if you give it, your first name, plus when you subscribed and confirmed.</li>
+    <li><strong>Story submissions:</strong> the details you enter in the share-your-story form.</li>
+    <li><strong>Usage:</strong> privacy-friendly, aggregated analytics (Cloudflare Web Analytics) that don't use cookies or track you across sites.</li>
+  </ul>
+  <h2>How we use it</h2>
+  <p>To send the newsletter you asked for, to reply to your story submission, and to understand which content is useful. We never sell your information.</p>
+  <h2>Who processes it</h2>
+  <p>We use trusted providers to run the service: Supabase (database), Cloudflare (hosting, spam protection and analytics), and Zoho ZeptoMail and Zoho Campaigns (email delivery). They process data only on our instructions.</p>
+  <h2>Your choices</h2>
+  <p>Every newsletter has a one-click unsubscribe link. To see, correct or delete the information we hold about you, email <a href="mailto:hello@techtalkwithtimx.com">hello@techtalkwithtimx.com</a>.</p>
+  <h2>Retention</h2>
+  <p>We keep subscriber records while you're subscribed and for a short period afterwards to honour your unsubscribe. Story submissions that don't lead to a feature are deleted after 12 months.</p>
+</PageLayout>

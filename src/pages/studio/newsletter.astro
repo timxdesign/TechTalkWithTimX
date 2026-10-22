@@ -1,0 +1,60 @@
+---
+import StudioLayout from "../../layouts/StudioLayout.astro";
+import NewsletterPanel from "../../components/studio/NewsletterPanel";
+import { zohoConfigured } from "../../lib/server/zoho";
+import { formatDate } from "../../lib/format";
+
+const db = Astro.locals.supabase!;
+const [subs, issues] = await Promise.all([
+  db.from("subscribers").select("email, status, source, created_at, confirmed_at").order("created_at", { ascending: false }).limit(50),
+  db.from("newsletter_issues").select("slug, subject, sent_at, created_at").order("created_at", { ascending: false }).limit(20),
+]);
+const all = subs.data ?? [];
+---
+
+<StudioLayout title="Newsletter">
+  <a slot="actions" href="/api/studio/subscribers.csv" class="rounded-md border border-rule bg-paper px-4 py-2 text-sm font-semibold">Export subscribers (CSV)</a>
+
+  <div class="grid gap-6 xl:grid-cols-[1fr_380px]">
+    <section class="rounded-xl border border-rule bg-paper">
+      <h2 class="border-b border-rule px-5 py-4 font-mono text-[0.7rem] uppercase tracking-widest text-ink-3">Latest subscribers</h2>
+      <table class="w-full text-sm">
+        <tbody class="divide-y divide-rule">
+          {
+            all.map((s) => (
+              <tr>
+                <td class="px-5 py-3 font-medium">{s.email}</td>
+                <td class="px-5 py-3 capitalize text-ink-3">{s.status}</td>
+                <td class="hidden px-5 py-3 text-ink-3 sm:table-cell">{s.source}</td>
+                <td class="hidden px-5 py-3 text-ink-3 md:table-cell">{formatDate(s.created_at, "short")}</td>
+              </tr>
+            ))
+          }
+          {all.length === 0 && <tr><td class="px-5 py-12 text-center text-ink-3">No subscribers yet.</td></tr>}
+        </tbody>
+      </table>
+    </section>
+
+    <div class="space-y-6">
+      <section class="rounded-xl border border-rule bg-paper p-5">
+        <h2 class="mb-2 font-mono text-[0.7rem] uppercase tracking-widest text-ink-3">Daily brief</h2>
+        <p class="mb-4 text-sm text-ink-2">Goes out automatically every morning at 07:00 (Lagos time) with anything published in the previous 24 hours.</p>
+        <NewsletterPanel client:only="react" zohoReady={zohoConfigured()} />
+      </section>
+      <section class="rounded-xl border border-rule bg-paper">
+        <h2 class="border-b border-rule px-5 py-4 font-mono text-[0.7rem] uppercase tracking-widest text-ink-3">Issues</h2>
+        <ul class="divide-y divide-rule text-sm">
+          {
+            (issues.data ?? []).map((i) => (
+              <li class="flex items-center justify-between gap-3 px-5 py-3">
+                <a href={`/newsletter/email/${i.slug}`} target="_blank" rel="noopener" class="truncate font-medium hover:underline">{i.subject}</a>
+                <span class="shrink-0 text-xs text-ink-3">{i.sent_at ? `Sent ${formatDate(i.sent_at, "short")}` : "Not sent"}</span>
+              </li>
+            ))
+          }
+          {(issues.data ?? []).length === 0 && <li class="px-5 py-8 text-center text-ink-3">No issues yet.</li>}
+        </ul>
+      </section>
+    </div>
+  </div>
+</StudioLayout>

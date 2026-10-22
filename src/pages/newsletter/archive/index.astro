@@ -1,0 +1,33 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getNewsletterIssues } from "../../../lib/content";
+import { formatDate } from "../../../lib/format";
+import { cachePage } from "../../../lib/cache";
+
+cachePage(Astro, ["newsletter"]);
+const issues = await getNewsletterIssues(365);
+---
+
+<BaseLayout title="Newsletter archive" description="Every issue of the Tech Talk with TimX daily brief.">
+  <section class="container-editorial pt-14 pb-10 md:pt-20">
+    <p class="eyebrow">{issues.length} issues</p>
+    <h1 class="display mt-4 text-[clamp(3rem,8vw,7rem)]" data-intro>Archive</h1>
+    <a href="/newsletter" class="btn-ink mt-8">Subscribe</a>
+  </section>
+  <ul class="container-editorial border-t border-ink">
+    {
+      issues.map((i) => (
+        <li class="border-b border-rule">
+          <a href={`/newsletter/archive/${i.slug}`} class="group grid gap-2 py-5 sm:grid-cols-[10rem_1fr]">
+            <span class="eyebrow pt-1">{formatDate(i.sent_at, "short")}</span>
+            <span>
+              <span class="headline block text-xl"><span class="link-draw">{i.subject}</span></span>
+              {i.preview_text && <span class="mt-1 block font-serif text-ink-2">{i.preview_text}</span>}
+            </span>
+          </a>
+        </li>
+      ))
+    }
+    {issues.length === 0 && <li class="py-16 font-serif text-xl text-ink-2">The first issue goes out soon.</li>}
+  </ul>
+</BaseLayout>

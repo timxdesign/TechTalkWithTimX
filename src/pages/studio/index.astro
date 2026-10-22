@@ -1,0 +1,66 @@
+---
+import StudioLayout from "../../layouts/StudioLayout.astro";
+import { formatDate } from "../../lib/format";
+
+const db = Astro.locals.supabase!;
+const count = async (table: string, filter?: (q: any) => any) => {
+  let q = db.from(table).select("id", { count: "exact", head: true });
+  if (filter) q = filter(q);
+  return (await q).count ?? 0;
+};
+
+const [published, drafts, episodes, newSubs, confirmed, pending, recent] = await Promise.all([
+  count("stories", (q) => q.eq("status", "published")),
+  count("stories", (q) => q.eq("status", "draft")),
+  count("episodes", (q) => q.eq("status", "published")),
+  count("submissions", (q) => q.eq("status", "new")),
+  count("subscribers", (q) => q.eq("status", "confirmed")),
+  count("subscribers", (q) => q.eq("status", "pending")),
+  db.from("stories").select("id, title, status, published_at, updated_at").order("updated_at", { ascending: false }).limit(6),
+]);
+
+const stats = [
+  { label: "Published stories", value: published, href: "/studio/stories" },
+  { label: "Drafts", value: drafts, href: "/studio/stories?status=draft" },
+  { label: "Episodes", value: episodes, href: "/studio/episodes" },
+  { label: "New submissions", value: newSubs, href: "/studio/submissions" },
+  { label: "Subscribers", value: confirmed, href: "/studio/newsletter", note: pending ? `+${pending} awaiting confirmation` : undefined },
+];
+---
+
+<StudioLayout title="Dashboard">
+  <div slot="actions" class="flex gap-2">
+    <a href="/studio/stories/new" class="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-paper">New story</a>
+    <a href="/studio/episodes/new" class="rounded-md border border-rule bg-paper px-4 py-2 text-sm font-semibold">New episode</a>
+  </div>
+
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    {
+      stats.map((s) => (
+        <a href={s.href} class="rounded-xl border border-rule bg-paper p-5 transition-colors hover:border-ink">
+          <p class="text-4xl font-extrabold tabular-nums tracking-tight">{s.value}</p>
+          <p class="mt-1 text-sm text-ink-3">{s.label}</p>
+          {s.note && <p class="mt-2 text-xs text-ink-3">{s.note}</p>}
+        </a>
+      ))
+    }
+  </div>
+
+  <section class="mt-10 rounded-xl border border-rule bg-paper">
+    <h2 class="border-b border-rule px-5 py-4 font-mono text-[0.7rem] uppercase tracking-widest text-ink-3">Recently edited</h2>
+    <ul class="divide-y divide-rule">
+      {
+        (recent.data ?? []).map((s) => (
+          <li>
+            <a href={`/studio/stories/${s.id}`} class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-paper-2">
+              <span class="font-medium">{s.title}</span>
+              <span class="shrink-0 text-sm text-ink-3">
+                <span class="capitalize">{s.status}</span> · {formatDate(s.updated_at, "short")}
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</StudioLayout>

@@ -1,0 +1,35 @@
+---
+import { initials } from "../../lib/format";
+
+interface Props {
+  name: string;
+  src?: string | null;
+  size?: number;
+  class?: string;
+}
+
+const { name, src, size = 48, class: className } = Astro.props;
+---
+
+{
+  src ? (
+    <img
+      src={src}
+      alt={name}
+      width={size}
+      height={size}
+      loading="lazy"
+      decoding="async"
+      class:list={["shrink-0 rounded-full object-cover grayscale", className]}
+      style={`width:${size}px;height:${size}px`}
+    />
+  ) : (
+    <span
+      class:list={["grid shrink-0 place-items-center rounded-full bg-ink font-bold text-paper", className]}
+      style={`width:${size}px;height:${size}px;font-size:${Math.round(size * 0.36)}px`}
+      aria-hidden="true"
+    >
+      {initials(name)}
+    </span>
+  )
+}

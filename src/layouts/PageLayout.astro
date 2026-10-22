@@ -1,0 +1,25 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import { breadcrumbSchema } from "../lib/schema";
+
+interface Props {
+  title: string;
+  description: string;
+  kicker?: string;
+  updated?: string;
+}
+const { title, description, kicker, updated } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} schema={[breadcrumbSchema([{ name: "Home", path: "/" }, { name: title, path: Astro.url.pathname }])]}>
+  <section class="container-editorial pt-14 md:pt-20">
+    {kicker && <p class="eyebrow" data-intro style="--d:.15s">{kicker}</p>}
+    <h1 class="display mt-4 max-w-5xl text-[clamp(3rem,8vw,7rem)]" data-intro>{title}</h1>
+    {updated && <p class="eyebrow mt-6">Last updated {updated}</p>}
+  </section>
+  <div class="container-editorial mt-14 grid lg:grid-cols-12">
+    <div class="prose-editorial lg:col-span-8 lg:col-start-3">
+      <slot />
+    </div>
+  </div>
+</BaseLayout>

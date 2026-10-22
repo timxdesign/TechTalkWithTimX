@@ -1,0 +1,31 @@
+---
+import NewsletterForm from "../forms/NewsletterForm";
+
+interface Props {
+  source: string;
+  title?: string;
+  text?: string;
+}
+const {
+  source,
+  title = "The daily brief for builders.",
+  text = "One email each morning: the newest founder stories, podcast conversations and the lessons inside them. Five minutes, no noise.",
+} = Astro.props;
+---
+
+<section class="container-editorial my-28" aria-labelledby={`nl-${source}`}>
+  <div class="grain overflow-hidden rounded-[1.25rem] bg-ink px-6 py-14 text-paper sm:px-12 sm:py-20 lg:px-16" data-reveal>
+    <div class="grid items-end gap-12 lg:grid-cols-12">
+      <div class="lg:col-span-7">
+        <p class="eyebrow !text-paper/55">Newsletter · Every morning</p>
+        <h2 id={`nl-${source}`} class="display mt-5 text-4xl sm:text-6xl">
+          {title.split(" ").slice(0, -1).join(" ")} <span class="serif-italic">{title.split(" ").slice(-1)}</span>
+        </h2>
+        <p class="mt-6 max-w-xl font-serif text-xl text-paper/70">{text}</p>
+      </div>
+      <div class="lg:col-span-5">
+        <NewsletterForm client:visible source={source} tone="paper" />
+      </div>
+    </div>
+  </div>
+</section>

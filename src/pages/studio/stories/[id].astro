@@ -1,0 +1,19 @@
+---
+import StudioLayout from "../../../layouts/StudioLayout.astro";
+import StoryEditor from "../../../components/studio/StoryEditor";
+import { SITE } from "../../../lib/site";
+
+const db = Astro.locals.supabase!;
+const { id } = Astro.params;
+const isNew = id === "new";
+const [story, people, series] = await Promise.all([
+  isNew ? Promise.resolve({ data: null }) : db.from("stories").select("*").eq("id", id!).maybeSingle(),
+  db.from("people").select("id, name, company, is_staff").order("name"),
+  db.from("series").select("id, name").order("sort_order"),
+]);
+if (!isNew && !story.data) return Astro.redirect("/studio/stories");
+---
+
+<StudioLayout title={isNew ? "New story" : "Edit story"}>
+  <StoryEditor client:only="react" story={story.data} people={people.data ?? []} series={series.data ?? []} siteUrl={SITE.url} />
+</StudioLayout>

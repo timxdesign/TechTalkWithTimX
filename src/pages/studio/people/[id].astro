@@ -1,0 +1,13 @@
+---
+import StudioLayout from "../../../layouts/StudioLayout.astro";
+import PersonEditor from "../../../components/studio/PersonEditor";
+
+const { id } = Astro.params;
+const isNew = id === "new";
+const person = isNew ? null : (await Astro.locals.supabase!.from("people").select("*").eq("id", id!).maybeSingle()).data;
+if (!isNew && !person) return Astro.redirect("/studio/people");
+---
+
+<StudioLayout title={isNew ? "Add person" : person!.name}>
+  <PersonEditor client:only="react" person={person} />
+</StudioLayout>

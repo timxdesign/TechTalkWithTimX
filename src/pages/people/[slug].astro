@@ -1,0 +1,72 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Avatar from "../../components/ui/Avatar.astro";
+import StoryCard from "../../components/story/StoryCard.astro";
+import EpisodeCard from "../../components/podcast/EpisodeCard.astro";
+import SectionHeader from "../../components/ui/SectionHeader.astro";
+import { getPersonBySlug } from "../../lib/content";
+import { breadcrumbSchema, personSchema } from "../../lib/schema";
+import { cachePage } from "../../lib/cache";
+
+const { slug = "" } = Astro.params;
+const result = await getPersonBySlug(slug);
+if (!result) return Astro.rewrite("/404");
+const { person, stories, episodes } = result;
+cachePage(Astro, ["people", "stories", "episodes", `person:${person.slug}`]);
+
+const links = [
+  person.website_url && { label: "Website", href: person.website_url },
+  person.linkedin_url && { label: "LinkedIn", href: person.linkedin_url },
+  person.x_handle && { label: `@${person.x_handle.replace(/^@/, "")}`, href: `https://x.com/${person.x_handle.replace(/^@/, "")}` },
+].filter(Boolean) as { label: string; href: string }[];
+---
+
+<BaseLayout
+  title={`${person.name}${person.company ? `, ${person.company}` : ""}`}
+  description={person.bio ?? `${person.name} on Tech Talk with TimX.`}
+  image={person.avatar_url}
+  type="profile"
+  schema={[
+    personSchema(person),
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "People", path: "/people" },
+      { name: person.name, path: `/people/${person.slug}` },
+    ]),
+  ]}
+>
+  <section class="container-editorial grid gap-10 pt-14 pb-16 md:grid-cols-12 md:pt-20">
+    <div class="md:col-span-3" data-intro style="--d:.15s">
+      <Avatar name={person.name} src={person.avatar_url} size={180} class="!size-36 md:!size-44" />
+    </div>
+    <div class="md:col-span-9">
+      <p class="eyebrow" data-intro style="--d:.15s">{[person.role, person.company].filter(Boolean).join(" · ")}</p>
+      <h1 class="display mt-4 text-[clamp(3rem,8vw,7rem)]" data-intro>{person.name}</h1>
+      {person.bio && <p class="mt-8 max-w-3xl font-serif text-xl leading-relaxed text-ink-2" data-intro style="--d:.15s">{person.bio}</p>}
+      <div class="mt-8 flex flex-wrap gap-2" data-intro style="--d:.15s">
+        {person.location && <span class="rounded-full bg-paper-2 px-4 py-2 text-sm">{person.location}</span>}
+        {links.map((l) => <a href={l.href} target="_blank" rel="noopener noreferrer" class="rounded-full border border-rule px-4 py-2 text-sm font-medium transition-colors hover:border-ink">{l.label} ↗</a>)}
+      </div>
+    </div>
+  </section>
+
+  {
+    episodes.length > 0 && (
+      <section class="container-editorial mt-12">
+        <SectionHeader title="Episodes" />
+        {episodes.map((ep) => <EpisodeCard episode={ep} />)}
+      </section>
+    )
+  }
+
+  {
+    stories.length > 0 && (
+      <section class="container-editorial mt-20">
+        <SectionHeader title="Stories" />
+        <div class="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {stories.map((s, i) => <StoryCard story={s} index={i} />)}
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>

@@ -1,0 +1,35 @@
+---
+import "../../styles/global.css";
+import Logo from "../../components/layout/Logo.astro";
+import LoginForm from "../../components/studio/LoginForm";
+
+const next = Astro.url.searchParams.get("next") ?? "/studio";
+const denied = Astro.url.searchParams.has("denied");
+Astro.response.headers.set("Cache-Control", "private, no-store");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Sign in · Studio · Tech Talk with TimX</title>
+  </head>
+  <body class="grid min-h-dvh lg:grid-cols-2">
+    <section class="grain hidden flex-col justify-between bg-ink p-12 text-paper lg:flex">
+      <Logo class="h-8 w-auto" inverted />
+      <p class="display max-w-md text-6xl">The stories behind what's <span class="serif-italic">being built.</span></p>
+      <p class="font-mono text-xs uppercase tracking-widest text-paper/50">Editorial Studio</p>
+    </section>
+    <section class="flex items-center justify-center px-6 py-16">
+      <div class="w-full max-w-sm">
+        <Logo class="mb-10 h-7 w-auto lg:hidden" />
+        <h1 class="text-3xl font-extrabold tracking-tight">Sign in to the Studio</h1>
+        <p class="mt-2 mb-8 text-ink-3">Editors only.</p>
+        <LoginForm client:load next={next} denied={denied} />
+      </div>
+    </section>
+  </body>
+</html>

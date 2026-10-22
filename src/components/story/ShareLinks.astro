@@ -1,0 +1,41 @@
+---
+interface Props {
+  url: string;
+  title: string;
+}
+const { url, title } = Astro.props;
+const enc = encodeURIComponent;
+const links = [
+  { label: "X", href: `https://x.com/intent/post?url=${enc(url)}&text=${enc(title)}` },
+  { label: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}` },
+  { label: "WhatsApp", href: `https://wa.me/?text=${enc(`${title} ${url}`)}` },
+];
+---
+
+<div class="flex flex-wrap items-center gap-2">
+  <span class="eyebrow mr-1">Share</span>
+  {
+    links.map((l) => (
+      <a href={l.href} target="_blank" rel="noopener noreferrer" class="rounded-full border border-rule px-3.5 py-1.5 text-sm font-medium transition-colors hover:border-ink">
+        {l.label}
+      </a>
+    ))
+  }
+  <button type="button" data-copy-link={url} class="rounded-full border border-rule px-3.5 py-1.5 text-sm font-medium transition-colors hover:border-ink">
+    Copy link
+  </button>
+</div>
+
+<script>
+  document.addEventListener("astro:page-load", () => {
+    document.querySelectorAll<HTMLButtonElement>("[data-copy-link]").forEach((btn) => {
+      btn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(btn.dataset.copyLink ?? location.href);
+          btn.textContent = "Copied ✓";
+          setTimeout(() => (btn.textContent = "Copy link"), 2000);
+        } catch {}
+      };
+    });
+  });
+</script>

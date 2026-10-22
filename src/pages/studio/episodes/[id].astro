@@ -1,0 +1,27 @@
+---
+import StudioLayout from "../../../layouts/StudioLayout.astro";
+import EpisodeEditor from "../../../components/studio/EpisodeEditor";
+
+const db = Astro.locals.supabase!;
+const { id } = Astro.params;
+const isNew = id === "new";
+const [episode, people, series, stories, last] = await Promise.all([
+  isNew ? Promise.resolve({ data: null }) : db.from("episodes").select("*").eq("id", id!).maybeSingle(),
+  db.from("people").select("id, name, company").order("name"),
+  db.from("series").select("id, name").order("sort_order"),
+  db.from("stories").select("id, title").order("updated_at", { ascending: false }).limit(200),
+  db.from("episodes").select("number").order("number", { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
+]);
+if (!isNew && !episode.data) return Astro.redirect("/studio/episodes");
+---
+
+<StudioLayout title={isNew ? "New episode" : "Edit episode"}>
+  <EpisodeEditor
+    client:only="react"
+    episode={episode.data}
+    people={people.data ?? []}
+    series={series.data ?? []}
+    stories={stories.data ?? []}
+    nextNumber={(last.data?.number ?? 0) + 1}
+  />
+</StudioLayout>

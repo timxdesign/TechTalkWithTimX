@@ -1,0 +1,51 @@
+---
+import Cover from "../ui/Cover.astro";
+import PlayButton from "./PlayButton.astro";
+import type { EpisodeCard } from "../../lib/content";
+import { episodeLabel, formatDate, formatDuration } from "../../lib/format";
+
+interface Props {
+  episode: EpisodeCard;
+  variant?: "row" | "tile";
+}
+
+const { episode, variant = "row" } = Astro.props;
+const href = `/podcast/${episode.slug}`;
+const label = episodeLabel(episode);
+const guestLine = episode.guest ? [episode.guest.name, episode.guest.company].filter(Boolean).join(", ") : null;
+---
+
+{
+  variant === "row" ? (
+    <article class="group grid gap-5 border-t border-rule py-8 first-of-type:border-t-0 first-of-type:pt-0 sm:grid-cols-[10rem_1fr] sm:gap-8" data-reveal>
+      <a href={href} class="block w-28 sm:w-40" tabindex="-1" aria-hidden="true">
+        <Cover src={episode.cover_url} alt="" title={episode.title} kicker={label} ratio="square" sizes="10rem" />
+      </a>
+      <div class="flex flex-col">
+        <p class="eyebrow">
+          {label} · {formatDate(episode.published_at, "short")}
+          {episode.duration_seconds && <> · {formatDuration(episode.duration_seconds)}</>}
+        </p>
+        <h3 class="headline mt-2 text-2xl sm:text-3xl">
+          <a href={href} class="link-draw">{episode.title}</a>
+        </h3>
+        {guestLine && <p class="mt-2 text-sm font-medium text-ink-2">with {guestLine}</p>}
+        {episode.dek && <p class="mt-3 line-clamp-2 max-w-2xl font-serif text-[1.05rem] text-ink-2">{episode.dek}</p>}
+        <div class="mt-5">
+          <PlayButton slug={episode.slug} title={episode.title} audio={episode.audio_url} cover={episode.cover_url} label={label} size="sm" text="Play" />
+        </div>
+      </div>
+    </article>
+  ) : (
+    <article class="group" data-reveal>
+      <a href={href} class="block" tabindex="-1" aria-hidden="true">
+        <Cover src={episode.cover_url} alt="" title={episode.title} kicker={label} ratio="square" sizes="(min-width: 1024px) 25vw, 50vw" />
+      </a>
+      <p class="eyebrow mt-4">{label}{episode.duration_seconds && <> · {formatDuration(episode.duration_seconds)}</>}</p>
+      <h3 class="headline mt-2 text-xl">
+        <a href={href} class="link-draw">{episode.title}</a>
+      </h3>
+      {guestLine && <p class="mt-1.5 text-sm text-ink-2">with {guestLine}</p>}
+    </article>
+  )
+}

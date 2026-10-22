@@ -1,0 +1,35 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import StoryCard from "../../components/story/StoryCard.astro";
+import { getStoriesByTag } from "../../lib/content";
+import { breadcrumbSchema } from "../../lib/schema";
+import { cachePage } from "../../lib/cache";
+
+const tag = decodeURIComponent(Astro.params.tag ?? "");
+const stories = await getStoriesByTag(tag);
+if (!stories.length) return Astro.rewrite("/404");
+cachePage(Astro, ["stories"]);
+const title = tag.charAt(0).toUpperCase() + tag.slice(1);
+---
+
+<BaseLayout
+  title={`${title}: stories`}
+  description={`Stories about ${tag} from founders and builders on Tech Talk with TimX.`}
+  schema={[
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Stories", path: "/stories" },
+      { name: title, path: `/topics/${encodeURIComponent(tag)}` },
+    ]),
+  ]}
+>
+  <section class="container-editorial pt-14 pb-12 md:pt-20">
+    <p class="eyebrow" data-intro style="--d:.15s">Topic · {stories.length} {stories.length === 1 ? "story" : "stories"}</p>
+    <h1 class="display mt-4 text-[clamp(3.2rem,9vw,8.5rem)]" data-intro>{title}</h1>
+  </section>
+  <div class="container-editorial border-t border-ink pt-12">
+    <div class="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+      {stories.map((s, i) => <StoryCard story={s} index={i} />)}
+    </div>
+  </div>
+</BaseLayout>

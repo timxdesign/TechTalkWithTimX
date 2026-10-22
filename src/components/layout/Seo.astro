@@ -1,0 +1,68 @@
+---
+import { SITE } from "../../lib/site";
+
+export type SeoProps = Props;
+
+export interface Props {
+  title?: string;
+  description?: string;
+  image?: string | null;
+  imageAlt?: string | null;
+  type?: "website" | "article" | "profile";
+  noindex?: boolean;
+  schema?: object[];
+  publishedTime?: string | null;
+  modifiedTime?: string | null;
+  section?: string | null;
+  tags?: string[];
+  canonicalPath?: string;
+}
+
+const {
+  title,
+  description = SITE.description,
+  image,
+  imageAlt,
+  type = "website",
+  noindex = false,
+  schema = [],
+  publishedTime,
+  modifiedTime,
+  section,
+  tags = [],
+  canonicalPath,
+} = Astro.props;
+
+const fullTitle = title ? `${title} | ${SITE.name}` : `${SITE.name}: ${SITE.tagline}`;
+const canonical = new URL(canonicalPath ?? Astro.url.pathname, SITE.url).toString();
+const ogImage = new URL(image || SITE.defaultOgImage, SITE.url).toString();
+---
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1"} />
+
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:type" content={type} />
+<meta property="og:title" content={title ?? fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImage} />
+{imageAlt && <meta property="og:image:alt" content={imageAlt} />}
+<meta property="og:locale" content="en_GB" />
+{publishedTime && <meta property="article:published_time" content={publishedTime} />}
+{modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+{section && <meta property="article:section" content={section} />}
+{tags.map((tag) => <meta property="article:tag" content={tag} />)}
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content={SITE.twitter} />
+<meta name="twitter:title" content={title ?? fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+
+<link rel="alternate" type="application/rss+xml" title={`${SITE.name}: Stories`} href="/rss.xml" />
+<link rel="alternate" type="application/rss+xml" title={`${SITE.name}: Podcast`} href="/podcast.xml" />
+
+{schema.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}

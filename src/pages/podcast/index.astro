@@ -1,0 +1,74 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import EpisodeCard from "../../components/podcast/EpisodeCard.astro";
+import PlayButton from "../../components/podcast/PlayButton.astro";
+import Waveform from "../../components/podcast/Waveform.astro";
+import NewsletterCTA from "../../components/newsletter/NewsletterCTA.astro";
+import { getEpisodes } from "../../lib/content";
+import { episodeLabel, formatDate, formatDuration } from "../../lib/format";
+import { breadcrumbSchema, podcastSeriesSchema } from "../../lib/schema";
+import { SITE } from "../../lib/site";
+import { cachePage } from "../../lib/cache";
+
+cachePage(Astro, ["episodes"]);
+const episodes = await getEpisodes({ limit: 100 });
+const [latest, ...rest] = episodes;
+
+const platforms = [
+  { label: "Apple Podcasts", href: SITE.podcast.appleUrl },
+  { label: "Spotify", href: SITE.podcast.spotifyUrl },
+  { label: "YouTube", href: SITE.podcast.youtubeUrl },
+  { label: "RSS", href: "/podcast.xml" },
+].filter((p) => p.href);
+---
+
+<BaseLayout
+  title="The Podcast"
+  description="Long-form conversations with founders and builders about the journey, the product and the lessons in between."
+  schema={[podcastSeriesSchema(), breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Podcast", path: "/podcast" }])]}
+>
+  <section class="grain bg-ink text-paper">
+    <div class="container-editorial pt-16 pb-20 md:pt-24 md:pb-28">
+      <p class="eyebrow !text-paper/55" data-intro style="--d:.15s">The podcast · {episodes.length} episodes</p>
+      <h1 class="display mt-5 text-[clamp(3rem,9vw,8.5rem)]" data-intro>
+        Conversations with <span class="serif-italic">the builders.</span>
+      </h1>
+      <div class="mt-10 flex flex-wrap gap-2" data-intro style="--d:.15s">
+        {
+          platforms.map((p) => (
+            <a href={p.href} class="rounded-full border border-paper/25 px-4 py-2 text-sm font-medium transition-colors hover:border-paper" target={p.href.startsWith("http") ? "_blank" : undefined} rel="noopener">
+              {p.label}
+            </a>
+          ))
+        }
+      </div>
+
+      {
+        latest && (
+          <div class="mt-16 grid gap-10 border-t border-paper/15 pt-10 lg:grid-cols-12" data-intro style="--d:.15s">
+            <div class="lg:col-span-7">
+              <p class="eyebrow !text-paper/55">Latest · {episodeLabel(latest)} · {formatDate(latest.published_at, "short")} · {formatDuration(latest.duration_seconds)}</p>
+              <h2 class="display mt-4 text-3xl sm:text-5xl">
+                <a href={`/podcast/${latest.slug}`} class="link-draw">{latest.title}</a>
+              </h2>
+              {latest.dek && <p class="mt-5 max-w-2xl font-serif text-lg text-paper/70">{latest.dek}</p>}
+              <div class="mt-8">
+                <PlayButton slug={latest.slug} title={latest.title} audio={latest.audio_url} cover={latest.cover_url} label={episodeLabel(latest)} tone="paper" />
+              </div>
+            </div>
+            <div class="flex items-end lg:col-span-5">
+              <Waveform seed={latest.slug} class="w-full text-paper/80" />
+            </div>
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <section class="container-editorial mt-20" aria-label="All episodes">
+    {rest.map((ep) => <EpisodeCard episode={ep} />)}
+    {episodes.length === 0 && <p class="py-24 text-center font-serif text-xl text-ink-2">The first episode is coming soon.</p>}
+  </section>
+
+  <NewsletterCTA source="podcast" title="Never miss an episode." text="New conversations land in your inbox the morning they're published, with the key takeaways." />
+</BaseLayout>

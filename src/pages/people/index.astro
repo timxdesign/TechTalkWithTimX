@@ -1,0 +1,61 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Avatar from "../../components/ui/Avatar.astro";
+import { getPeople } from "../../lib/content";
+import { breadcrumbSchema } from "../../lib/schema";
+import { cachePage } from "../../lib/cache";
+
+cachePage(Astro, ["people"]);
+const people = await getPeople();
+const guests = people.filter((p) => !p.is_staff);
+const staff = people.filter((p) => p.is_staff);
+---
+
+<BaseLayout
+  title="People"
+  description="The founders, engineers, designers and operators who've shared their stories on Tech Talk with TimX."
+  schema={[breadcrumbSchema([{ name: "Home", path: "/" }, { name: "People", path: "/people" }])]}
+>
+  <section class="container-editorial pt-14 pb-12 md:pt-20">
+    <p class="eyebrow" data-intro style="--d:.15s">{guests.length} builders and counting</p>
+    <h1 class="display mt-4 text-[clamp(3.5rem,10vw,9rem)]" data-intro>People</h1>
+  </section>
+
+  <section class="container-editorial" aria-label="Guests">
+    <ul class="grid border-t border-l border-rule sm:grid-cols-2 lg:grid-cols-3">
+      {
+        guests.map((p, i) => (
+          <li class="border-r border-b border-rule bg-paper" data-reveal data-reveal-delay={String((i % 3) * 0.06)}>
+            <a href={`/people/${p.slug}`} class="group flex h-full flex-col p-7 transition-colors hover:bg-paper-2">
+              <Avatar name={p.name} src={p.avatar_url} size={72} />
+              <p class="headline mt-8 text-2xl"><span class="link-draw">{p.name}</span></p>
+              <p class="mt-1 text-sm text-ink-3">{[p.role, p.company].filter(Boolean).join(", ")}</p>
+              {p.location && <p class="eyebrow mt-auto pt-6">{p.location}</p>}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  {
+    staff.length > 0 && (
+      <section class="container-editorial mt-24" aria-labelledby="team">
+        <h2 id="team" class="eyebrow mb-6 border-b-2 border-ink pb-4">The team</h2>
+        <ul class="flex flex-wrap gap-8">
+          {staff.map((p) => (
+            <li>
+              <a href={`/people/${p.slug}`} class="group flex items-center gap-4">
+                <Avatar name={p.name} src={p.avatar_url} size={52} />
+                <span>
+                  <span class="block font-semibold"><span class="link-draw">{p.name}</span></span>
+                  <span class="block text-sm text-ink-3">{p.role}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</BaseLayout>

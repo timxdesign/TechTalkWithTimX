@@ -1,0 +1,24 @@
+---
+interface Props {
+  title: string;
+  kicker?: string;
+  href?: string;
+  linkText?: string;
+  as?: "h1" | "h2";
+}
+const { title, kicker, href, linkText = "View all", as: Tag = "h2" } = Astro.props;
+---
+
+<div class="mb-10 flex items-end justify-between gap-6 border-b-2 border-ink pb-4" data-reveal>
+  <div>
+    {kicker && <p class="eyebrow mb-2">{kicker}</p>}
+    <Tag class="display text-3xl sm:text-4xl">{title}</Tag>
+  </div>
+  {
+    href && (
+      <a href={href} class="link-draw shrink-0 pb-1 text-sm font-semibold">
+        {linkText} →
+      </a>
+    )
+  }
+</div>

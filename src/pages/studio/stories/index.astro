@@ -1,0 +1,31 @@
+---
+import StudioLayout from "../../../layouts/StudioLayout.astro";
+import ContentTable from "../../../components/studio/ContentTable.astro";
+
+const status = Astro.url.searchParams.get("status");
+let query = Astro.locals.supabase!
+  .from("stories")
+  .select("id, title, status, published_at, updated_at, series:series(name), guest:people!stories_guest_id_fkey(name)")
+  .order("updated_at", { ascending: false });
+if (status) query = query.eq("status", status);
+const { data } = await query;
+const rows = (data ?? []).map((s: any) => ({ ...s, meta: [s.series?.name, s.guest?.name].filter(Boolean).join(" · ") }));
+const filters = ["all", "draft", "scheduled", "published", "archived"];
+---
+
+<StudioLayout title="Stories">
+  <a slot="actions" href="/studio/stories/new" class="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-paper">New story</a>
+  <nav class="mb-4 flex flex-wrap gap-1" aria-label="Filter">
+    {
+      filters.map((f) => (
+        <a
+          href={f === "all" ? "/studio/stories" : `/studio/stories?status=${f}`}
+          class:list={["rounded-full px-3 py-1 text-sm capitalize", (status ?? "all") === f ? "bg-ink text-paper" : "hover:bg-paper"]}
+        >
+          {f}
+        </a>
+      ))
+    }
+  </nav>
+  <ContentTable rows={rows} base="/studio/stories" empty="No stories yet. Write the first one." />
+</StudioLayout>

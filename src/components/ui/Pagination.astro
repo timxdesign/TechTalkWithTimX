@@ -1,0 +1,19 @@
+---
+interface Props {
+  page: number;
+  pages: number;
+  base: string;
+}
+const { page, pages, base } = Astro.props;
+const href = (p: number) => (p === 1 ? base : `${base}?page=${p}`);
+---
+
+{
+  pages > 1 && (
+    <nav aria-label="Pagination" class="mt-20 flex items-center justify-between border-t border-rule pt-6 text-sm font-semibold">
+      {page > 1 ? <a href={href(page - 1)} rel="prev" class="link-draw">← Newer</a> : <span />}
+      <span class="eyebrow">Page {page} of {pages}</span>
+      {page < pages ? <a href={href(page + 1)} rel="next" class="link-draw">Older →</a> : <span />}
+    </nav>
+  )
+}

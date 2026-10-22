@@ -1,0 +1,50 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import StoryCard from "../../components/story/StoryCard.astro";
+import Pagination from "../../components/ui/Pagination.astro";
+import { getLatestStories, getSeriesList } from "../../lib/content";
+import { cachePage } from "../../lib/cache";
+import { breadcrumbSchema } from "../../lib/schema";
+
+const PER_PAGE = 12;
+const page = Math.max(1, Number(Astro.url.searchParams.get("page")) || 1);
+cachePage(Astro, ["stories", "series"]);
+
+const [{ stories, total }, seriesList] = await Promise.all([
+  getLatestStories({ limit: PER_PAGE, offset: (page - 1) * PER_PAGE }),
+  getSeriesList(),
+]);
+const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+if (page > pages) return Astro.redirect("/stories", 302);
+
+const [first, ...others] = page === 1 ? stories : [null, ...stories];
+---
+
+<BaseLayout
+  title={page > 1 ? `Stories, page ${page}` : "Stories"}
+  description="Long-form stories from founders and builders: how they started, what they're building and what they've learned."
+  canonicalPath={page > 1 ? `/stories?page=${page}` : "/stories"}
+  schema={[breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Stories", path: "/stories" }])]}
+>
+  <section class="container-editorial pt-14 pb-10 md:pt-20">
+    <p class="eyebrow" data-intro style="--d:.15s">{total} {total === 1 ? "story" : "stories"}</p>
+    <h1 class="display mt-4 text-[clamp(3.5rem,10vw,9rem)]" data-intro>Stories</h1>
+    <nav aria-label="Series" class="mt-10 flex flex-wrap gap-2" data-intro style="--d:.15s">
+      <a href="/stories" class="rounded-full bg-ink px-4 py-2 text-sm font-medium text-paper" aria-current="page">All</a>
+      {seriesList.map((s) => <a href={`/series/${s.slug}`} class="rounded-full border border-rule px-4 py-2 text-sm font-medium transition-colors hover:border-ink">{s.name}</a>)}
+    </nav>
+  </section>
+
+  <div class="container-editorial">
+    {first && <div class="border-t border-ink pt-12"><StoryCard story={first} variant="lead" eager /></div>}
+    {
+      others.length > 0 && (
+        <div class="mt-20 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {others.map((story, i) => story && <StoryCard story={story} index={i} />)}
+        </div>
+      )
+    }
+    {stories.length === 0 && <p class="py-24 text-center font-serif text-xl text-ink-2">No stories yet. Check back soon.</p>}
+    <Pagination page={page} pages={pages} base="/stories" />
+  </div>
+</BaseLayout>

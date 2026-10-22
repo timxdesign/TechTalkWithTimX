@@ -1,0 +1,59 @@
+---
+import { formatDate } from "../../lib/format";
+
+interface Row {
+  id: string;
+  title: string;
+  status: string;
+  published_at: string | null;
+  updated_at: string;
+  meta?: string | null;
+}
+interface Props {
+  rows: Row[];
+  base: string;
+  empty: string;
+}
+const { rows, base, empty } = Astro.props;
+const badge: Record<string, string> = {
+  published: "bg-ink text-paper",
+  scheduled: "border border-ink",
+  draft: "bg-paper-2 text-ink-2",
+  archived: "text-ink-3",
+};
+---
+
+<div class="overflow-hidden rounded-xl border border-rule bg-paper">
+  <table class="w-full text-sm">
+    <thead class="border-b border-rule text-left font-mono text-[0.68rem] uppercase tracking-widest text-ink-3">
+      <tr>
+        <th class="px-5 py-3 font-medium">Title</th>
+        <th class="hidden px-5 py-3 font-medium sm:table-cell">Status</th>
+        <th class="hidden px-5 py-3 font-medium md:table-cell">Publish date</th>
+        <th class="hidden px-5 py-3 font-medium lg:table-cell">Updated</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-rule">
+      {
+        rows.map((r) => (
+          <tr class="hover:bg-paper-2">
+            <td class="px-5 py-4">
+              <a href={`${base}/${r.id}`} class="font-semibold hover:underline">{r.title}</a>
+              {r.meta && <p class="mt-0.5 text-xs text-ink-3">{r.meta}</p>}
+            </td>
+            <td class="hidden px-5 py-4 sm:table-cell">
+              <span class:list={["inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize", badge[r.status]]}>{r.status}</span>
+            </td>
+            <td class="hidden px-5 py-4 text-ink-3 md:table-cell">{formatDate(r.published_at, "short") || "–"}</td>
+            <td class="hidden px-5 py-4 text-ink-3 lg:table-cell">{formatDate(r.updated_at, "short")}</td>
+          </tr>
+        ))
+      }
+      {rows.length === 0 && (
+        <tr>
+          <td colspan="4" class="px-5 py-12 text-center text-ink-3">{empty}</td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>

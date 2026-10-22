@@ -1,0 +1,10 @@
+---
+import StudioLayout from "../../layouts/StudioLayout.astro";
+import SubmissionsBoard from "../../components/studio/SubmissionsBoard";
+
+const { data } = await Astro.locals.supabase!.from("submissions").select("*").order("created_at", { ascending: false });
+---
+
+<StudioLayout title="Story submissions">
+  <SubmissionsBoard client:only="react" initial={data ?? []} />
+</StudioLayout>
