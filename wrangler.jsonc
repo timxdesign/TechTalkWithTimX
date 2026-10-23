@@ -3,6 +3,9 @@
 	"compatibility_date": "2026-10-12",
 	"compatibility_flags": ["global_fetch_strictly_public"],
 	"name": "techtalk-with-timx",
+	// Keep variables added in the Cloudflare dashboard when Workers Builds deploys.
+	// Without this, every deploy deletes dashboard "Text" variables (secrets survive).
+	"keep_vars": true,
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"assets": {
 		"directory": "./dist",
