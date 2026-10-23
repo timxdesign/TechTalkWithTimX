@@ -211,7 +211,7 @@ export default function EpisodeEditor({ episode, people, series, stories, nextNu
               placeholder="None"
             />
           </Field>
-          <Field label="YouTube link" hint="Plays in the site player when there's no audio file. Apple Podcasts and Spotify still need the audio upload.">
+          <Field label="YouTube link" hint="Plays on the site when there's no audio file. To turn it into an MP3 for Apple Podcasts and Spotify, run npm run episode:audio -- <slug>.">
             <Input value={video} onChange={(e) => setVideo(e.target.value)} placeholder="https://youtu.be/…" />
           </Field>
           <label className="flex items-center justify-between gap-3">

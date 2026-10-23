@@ -17,7 +17,8 @@
     "check": "astro check",
     "editor:add": "node --env-file=.env scripts/make-editor.mjs",
     "stories:publish": "node --env-file=.env scripts/publish-stories.mjs",
-    "og:generate": "node --env-file=.env scripts/generate-og.mjs"
+    "og:generate": "node --env-file=.env scripts/generate-og.mjs",
+    "episode:audio": "node --env-file=.env scripts/episode-audio.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.0",
