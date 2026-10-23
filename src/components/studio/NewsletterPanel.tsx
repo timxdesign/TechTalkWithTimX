@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { readJson } from "@/lib/read-json";
 import { toast, Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -24,7 +25,7 @@ export default function NewsletterPanel({ zohoReady }: { zohoReady: boolean }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dryRun }),
     });
-    const data = (await res.json()) as Result;
+    const data = await readJson<Result>(res);
     setBusy(false);
     setResult(data);
     if (data.status === "error") toast.error(data.error ?? "Failed");

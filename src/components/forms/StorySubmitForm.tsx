@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import { readJson } from "@/lib/read-json";
 import { useTurnstile } from "./useTurnstile";
 
 const STAGES = ["Idea", "Pre-seed", "Seed", "Series A+", "Bootstrapped & profitable", "Not a founder: I build at a company"];
@@ -44,7 +45,7 @@ export default function StorySubmitForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, token: turnstile.token }),
       });
-      const body = (await res.json()) as { ok: boolean; errors?: Errors; error?: string };
+      const body = await readJson<{ ok: boolean; errors?: Errors; error?: string }>(res);
       if (body.ok) {
         setStatus("done");
         window.scrollTo({ top: 0, behavior: "smooth" });

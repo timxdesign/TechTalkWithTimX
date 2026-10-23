@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { readJson } from "@/lib/read-json";
 import { useTurnstile } from "./useTurnstile";
 
 interface Props {
@@ -30,7 +31,7 @@ export default function NewsletterForm({ source, tone = "ink", showName = false 
           token: turnstile.token,
         }),
       });
-      const data = (await res.json()) as { ok: boolean; status?: string; error?: string };
+      const data = await readJson<{ ok: boolean; status?: string; error?: string }>(res);
       if (!data.ok) throw new Error(data.error ?? "Something went wrong.");
       setState({ kind: "done", already: data.status === "already" });
     } catch (err) {

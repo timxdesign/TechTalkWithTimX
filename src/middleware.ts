@@ -39,7 +39,20 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.editor = { id: user.id, email: user.email ?? "", role: editor.role };
   }
 
-  const response = await next();
+  let response: Response;
+  try {
+    response = await next();
+  } catch (err) {
+    // An API route crashed (for example, a missing secret on the Worker). Answer in
+    // JSON so the page can show it; only signed-in editors see the actual reason.
+    if (!pathname.startsWith("/api/")) throw err;
+    console.error(`${pathname}:`, err);
+    const message = isStudioApi(pathname) && err instanceof Error ? err.message : "Something went wrong. Please try again.";
+    response = new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
     if (!response.headers.has(k)) response.headers.set(k, v);
   }

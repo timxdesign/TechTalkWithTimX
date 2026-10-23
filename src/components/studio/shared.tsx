@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
+import { readJson } from "@/lib/read-json";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -90,7 +91,7 @@ export async function uploadFile(file: File, folder: "covers" | "avatars" | "aud
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: file.name, contentType: file.type, folder }),
   });
-  const signed = (await res.json()) as { path?: string; token?: string; publicUrl?: string; error?: string };
+  const signed = await readJson<{ path?: string; token?: string; publicUrl?: string; error?: string }>(res);
   if (!res.ok || !signed.path) throw new Error(signed.error ?? "Upload failed");
   const { error } = await studioClient().storage.from("media").uploadToSignedUrl(signed.path, signed.token!, file, {
     contentType: file.type,
