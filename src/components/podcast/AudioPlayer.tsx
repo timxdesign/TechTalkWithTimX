@@ -17,6 +17,7 @@ interface Track {
   youtube?: string;
   cover?: string;
   label?: string;
+  duration?: number; // seconds, shown before the media has loaded
 }
 
 // The parts of the YouTube IFrame API we use.
@@ -74,6 +75,10 @@ function loadYouTubeApi() {
 
 const SPEEDS = [1, 1.25, 1.5, 2];
 const posKey = (slug: string) => `ttt-pos:${slug}`;
+// The episode a visitor closed; it won't be queued for them again.
+const DISMISSED_KEY = "ttt-autoplay-dismissed";
+// Set once per browser session so autoplay only happens on the first page.
+const SESSION_KEY = "ttt-autoplay";
 
 function fmt(t: number) {
   if (!Number.isFinite(t)) return "0:00";
@@ -101,6 +106,9 @@ export default function AudioPlayer() {
   const ytHostRef = useRef<HTMLDivElement>(null);
   const ytRef = useRef<YTPlayer | null>(null);
   const ytPending = useRef<{ id: string; start: number } | null>(null);
+  // False while an auto-queued YouTube episode waits for a tap, so visitors who
+  // never press play don't download YouTube's player.
+  const [ytArmed, setYtArmed] = useState(true);
   const trackRef = useRef(track);
   trackRef.current = track;
   const speedRef = useRef(speed);
@@ -114,7 +122,7 @@ export default function AudioPlayer() {
     const a = audioRef.current;
     return {
       paused: () => (yt ? yt.getPlayerState() !== YT_PLAYING : (a?.paused ?? true)),
-      play: () => (yt ? yt.playVideo() : void a?.play()),
+      play: () => (yt ? yt.playVideo() : void a?.play().catch(() => {})),
       pause: () => (yt ? yt.pauseVideo() : a?.pause()),
       current: () => (yt ? yt.getCurrentTime() : (a?.currentTime ?? 0)),
       length: () => (yt ? yt.getDuration() : (a?.duration ?? 0)),
@@ -135,10 +143,15 @@ export default function AudioPlayer() {
     });
   }, [track, playing]);
 
-  const load = useCallback((next: Track, startAt?: number) => {
+  const load = useCallback((next: Track, startAt?: number, opts: { auto?: boolean } = {}) => {
     const audio = audioRef.current;
     if (!audio) return;
     if (track?.slug === next.slug) {
+      if (isYouTube && !ytArmed) {
+        if (startAt != null && ytPending.current) ytPending.current.start = startAt;
+        setYtArmed(true);
+        return;
+      }
       const m = media();
       if (startAt != null) m.seek(startAt);
       if (m.paused()) m.play();
@@ -155,9 +168,10 @@ export default function AudioPlayer() {
     }
     setTrack(next);
     setTime(resume);
-    setDuration(0);
+    setDuration(next.duration ?? 0);
 
     if (next.youtube) {
+      setYtArmed(!opts.auto);
       audio.pause();
       audio.removeAttribute("src");
       if (ytRef.current) ytRef.current.loadVideoById({ videoId: next.youtube, startSeconds: resume });
@@ -170,14 +184,43 @@ export default function AudioPlayer() {
     pendingSeek.current = resume;
     audio.src = next.audio!;
     audio.playbackRate = speed;
-    void audio.play();
-  }, [track, speed, media]);
+    // Browsers refuse to start sound before the visitor interacts with the page;
+    // an auto-queued episode then simply waits in the dock for a tap.
+    audio.play().catch(() => {});
+  }, [track, speed, media, isYouTube, ytArmed]);
+
+  // Queue the newest episode on the first page of a visit and try to play it.
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  useEffect(() => {
+    if (location.pathname.startsWith("/studio")) return;
+    try {
+      if (sessionStorage.getItem(SESSION_KEY)) return;
+      sessionStorage.setItem(SESSION_KEY, "1");
+    } catch {
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/latest-episode")
+      .then((res) => (res.ok ? (res.json() as Promise<Track | null>) : null))
+      .then((next) => {
+        if (cancelled || !next || trackRef.current) return;
+        try {
+          if (localStorage.getItem(DISMISSED_KEY) === next.slug) return;
+        } catch {}
+        loadRef.current(next, undefined, { auto: true });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Create the YouTube player inside the dock once it has rendered.
   useEffect(() => {
     const pending = ytPending.current;
     const host = ytHostRef.current;
-    if (!isYouTube || !pending || !host) return;
+    if (!isYouTube || !ytArmed || !pending || !host) return;
     ytPending.current = null;
     let cancelled = false;
     void loadYouTubeApi().then((YT) => {
@@ -210,7 +253,7 @@ export default function AudioPlayer() {
     return () => {
       cancelled = true;
     };
-  }, [isYouTube, track]);
+  }, [isYouTube, ytArmed, track]);
 
   // YouTube has no timeupdate event, so poll while it plays.
   useEffect(() => {
@@ -281,6 +324,7 @@ export default function AudioPlayer() {
   }, [track, media]);
 
   const toggle = () => {
+    if (isYouTube && !ytArmed) return setYtArmed(true);
     const m = media();
     if (m.paused()) m.play();
     else m.pause();
@@ -295,6 +339,9 @@ export default function AudioPlayer() {
     media().rate(next);
   };
   const close = () => {
+    try {
+      if (track) localStorage.setItem(DISMISSED_KEY, track.slug);
+    } catch {}
     audioRef.current?.pause();
     ytRef.current?.destroy();
     ytRef.current = null;
@@ -328,13 +375,13 @@ export default function AudioPlayer() {
             aria-label="Podcast player"
             className="animate-in fade-in slide-in-from-bottom-10 duration-500 ease-[var(--ease-editorial)] fixed inset-x-3 bottom-3 z-50 mx-auto max-w-4xl overflow-hidden rounded-2xl bg-ink text-paper shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] ring-1 ring-paper/10 sm:inset-x-6 sm:bottom-5"
           >
-            {isYouTube && (
+            {isYouTube && ytArmed && (
               <div className="px-3 pt-3 sm:px-4 sm:pt-4">
                 <div ref={ytHostRef} className="h-[200px] w-full overflow-hidden rounded-lg bg-black sm:w-[356px]" />
               </div>
             )}
             <div className="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
-              <a href={`/podcast/${track.slug}`} className={isYouTube ? "hidden" : "hidden shrink-0 sm:block"} aria-label="Open episode page">
+              <a href={`/podcast/${track.slug}`} className={isYouTube && ytArmed ? "hidden" : "hidden shrink-0 sm:block"} aria-label="Open episode page">
                 {track.cover ? (
                   <img src={track.cover} alt="" width={48} height={48} className="size-12 rounded-md object-cover" />
                 ) : (
