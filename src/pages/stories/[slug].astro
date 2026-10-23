@@ -75,7 +75,7 @@ const updated =
         </div>
         {
           episode?.audio_url && (
-            <PlayButton slug={episode.slug} title={episode.title} audio={episode.audio_url} cover={episode.cover_url} label={episodeLabel(episode)} size="sm" text={`Listen · ${formatDuration(episode.duration_seconds)}`} />
+            <PlayButton slug={episode.slug} title={episode.title} audio={episode.audio_url} video={episode.video_url} cover={episode.cover_url} label={episodeLabel(episode)} size="sm" text={`Listen · ${formatDuration(episode.duration_seconds)}`} />
           )
         }
       </div>

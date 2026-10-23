@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { youtubeId } from "@/lib/youtube";
 import { toast, Toaster } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,7 +60,9 @@ export default function EpisodeEditor({ episode, people, series, stories, nextNu
   async function save(nextStatus?: ContentStatus) {
     const finalStatus = nextStatus ?? status;
     if (!title.trim()) return toast.error("Add a title first.");
-    if ((finalStatus === "published" || finalStatus === "scheduled") && !audio) return toast.error("Upload the audio before publishing.");
+    if (video && !youtubeId(video)) return toast.error("That YouTube link isn't recognised. Paste the video's share link.");
+    if ((finalStatus === "published" || finalStatus === "scheduled") && !audio && !video)
+      return toast.error("Upload the audio or add a YouTube link before publishing.");
     let when = publishedAt ? new Date(publishedAt).toISOString() : null;
     if ((finalStatus === "published" || finalStatus === "scheduled") && !when) when = new Date().toISOString();
 
@@ -208,7 +211,7 @@ export default function EpisodeEditor({ episode, people, series, stories, nextNu
               placeholder="None"
             />
           </Field>
-          <Field label="YouTube link" hint="Optional">
+          <Field label="YouTube link" hint="Plays in the site player when there's no audio file. Apple Podcasts and Spotify still need the audio upload.">
             <Input value={video} onChange={(e) => setVideo(e.target.value)} placeholder="https://youtu.be/…" />
           </Field>
           <label className="flex items-center justify-between gap-3">

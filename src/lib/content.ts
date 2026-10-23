@@ -25,7 +25,7 @@ const EPISODE_SELECT = `*,
   series:series(*),
   story:stories!episodes_story_id_fkey(slug, title)`;
 
-const EPISODE_CARD_SELECT = `id, slug, season, number, title, dek, audio_url, duration_seconds, cover_url, cover_alt, published_at, chapters,
+const EPISODE_CARD_SELECT = `id, slug, season, number, title, dek, audio_url, video_url, duration_seconds, cover_url, cover_alt, published_at, chapters,
   guest:people!episodes_guest_id_fkey(id, slug, name, role, company, avatar_url),
   series:series(id, slug, name)`;
 
@@ -40,7 +40,7 @@ export type StoryCard = Pick<
 
 export type EpisodeCard = Pick<
   EpisodeWithRefs,
-  "id" | "slug" | "season" | "number" | "title" | "dek" | "audio_url" | "duration_seconds" | "cover_url" | "cover_alt" | "published_at" | "chapters"
+  "id" | "slug" | "season" | "number" | "title" | "dek" | "audio_url" | "video_url" | "duration_seconds" | "cover_url" | "cover_alt" | "published_at" | "chapters"
 > & {
   guest: Pick<Person, "id" | "slug" | "name" | "role" | "company" | "avatar_url"> | null;
   series: Pick<Series, "id" | "slug" | "name"> | null;

@@ -1,4 +1,5 @@
 import { SITE, absoluteUrl, storyImage } from "./site";
+import { youtubeId, youtubeThumbnail } from "./youtube";
 import { isoDuration, stripHtml } from "./format";
 import type { EpisodeWithRefs, Person, StoryWithRefs } from "./types";
 
@@ -78,6 +79,22 @@ export const podcastSeriesSchema = () => ({
   author: { "@type": "Person", name: SITE.podcast.author },
 });
 
+// The episode's YouTube video, so it can appear in video search results.
+const videoSchema = (ep: EpisodeWithRefs) => {
+  const id = youtubeId(ep.video_url);
+  if (!id) return undefined;
+  return {
+    "@type": "VideoObject",
+    name: ep.title,
+    description: ep.seo_description ?? ep.dek ?? ep.title,
+    thumbnailUrl: [youtubeThumbnail(id)],
+    uploadDate: ep.published_at,
+    duration: isoDuration(ep.duration_seconds),
+    embedUrl: `https://www.youtube-nocookie.com/embed/${id}`,
+    contentUrl: `https://www.youtube.com/watch?v=${id}`,
+  };
+};
+
 export const episodeSchema = (ep: EpisodeWithRefs) => ({
   "@context": "https://schema.org",
   "@type": "PodcastEpisode",
@@ -91,6 +108,7 @@ export const episodeSchema = (ep: EpisodeWithRefs) => ({
   associatedMedia: ep.audio_url
     ? { "@type": "MediaObject", contentUrl: ep.audio_url, encodingFormat: "audio/mpeg" }
     : undefined,
+  video: videoSchema(ep),
   partOfSeries: { "@id": `${SITE.url}/podcast#series` },
   actor: ep.guest ? [personRef(ep.guest)] : undefined,
 });

@@ -5,13 +5,71 @@ import { useCallback, useEffect, useRef, useState } from "react";
 //   <button data-play-episode data-slug data-title data-audio data-cover data-label>
 //   <button data-seek="125" data-slug="...">   jump to a chapter
 // It marks matching play buttons with data-state="playing" | "paused".
+//
+// Episodes without an audio file play from YouTube (data-youtube="<video id>")
+// through YouTube's official embedded player. YouTube's terms require that player
+// to stay visible at 200×200px or more, so it's shown in the dock, never hidden.
 
 interface Track {
   slug: string;
   title: string;
-  audio: string;
+  audio?: string;
+  youtube?: string;
   cover?: string;
   label?: string;
+}
+
+// The parts of the YouTube IFrame API we use.
+interface YTPlayer {
+  playVideo(): void;
+  pauseVideo(): void;
+  seekTo(seconds: number, allowSeekAhead: boolean): void;
+  getCurrentTime(): number;
+  getDuration(): number;
+  getPlayerState(): number;
+  setPlaybackRate(rate: number): void;
+  loadVideoById(opts: { videoId: string; startSeconds?: number }): void;
+  destroy(): void;
+}
+interface YTNamespace {
+  Player: new (
+    el: HTMLElement,
+    opts: {
+      videoId: string;
+      width?: string;
+      height?: string;
+      playerVars?: Record<string, number | string>;
+      events?: {
+        onReady?: (e: { target: YTPlayer }) => void;
+        onStateChange?: (e: { data: number; target: YTPlayer }) => void;
+      };
+    },
+  ) => YTPlayer;
+}
+declare global {
+  interface Window {
+    YT?: YTNamespace;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+const YT_PLAYING = 1;
+const YT_ENDED = 0;
+let ytApi: Promise<YTNamespace> | null = null;
+function loadYouTubeApi() {
+  ytApi ??= new Promise((resolve) => {
+    if (window.YT?.Player) return resolve(window.YT);
+    const previous = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      previous?.();
+      resolve(window.YT!);
+    };
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    script.async = true;
+    document.head.append(script);
+  });
+  return ytApi;
 }
 
 const SPEEDS = [1, 1.25, 1.5, 2];
@@ -27,9 +85,9 @@ function fmt(t: number) {
 }
 
 function readTrack(el: HTMLElement): Track | null {
-  const { slug, title, audio, cover, label } = el.dataset;
-  if (!slug || !title || !audio) return null;
-  return { slug, title, audio, cover, label };
+  const { slug, title, audio, youtube, cover, label } = el.dataset;
+  if (!slug || !title || !(audio || youtube)) return null;
+  return { slug, title, audio, youtube: audio ? undefined : youtube, cover, label };
 }
 
 export default function AudioPlayer() {
@@ -40,6 +98,34 @@ export default function AudioPlayer() {
   const [duration, setDuration] = useState(0);
   const [speed, setSpeed] = useState(1);
   const pendingSeek = useRef<number | null>(null);
+  const ytHostRef = useRef<HTMLDivElement>(null);
+  const ytRef = useRef<YTPlayer | null>(null);
+  const ytPending = useRef<{ id: string; start: number } | null>(null);
+  const trackRef = useRef(track);
+  trackRef.current = track;
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+  const isYouTube = Boolean(track?.youtube);
+
+  // One set of controls for both engines.
+  const media = useCallback(() => {
+    // The API's methods only exist once the player is ready.
+    const yt = isYouTube && typeof ytRef.current?.playVideo === "function" ? ytRef.current : null;
+    const a = audioRef.current;
+    return {
+      paused: () => (yt ? yt.getPlayerState() !== YT_PLAYING : (a?.paused ?? true)),
+      play: () => (yt ? yt.playVideo() : void a?.play()),
+      pause: () => (yt ? yt.pauseVideo() : a?.pause()),
+      current: () => (yt ? yt.getCurrentTime() : (a?.currentTime ?? 0)),
+      length: () => (yt ? yt.getDuration() : (a?.duration ?? 0)),
+      seek: (t: number) => {
+        if (yt) yt.seekTo(t, true);
+        else if (a) a.currentTime = t;
+        setTime(t);
+      },
+      rate: (r: number) => (yt ? yt.setPlaybackRate(r) : a && (a.playbackRate = r)),
+    };
+  }, [isYouTube]);
 
   const syncButtons = useCallback(() => {
     document.querySelectorAll<HTMLElement>("[data-play-episode]").forEach((btn) => {
@@ -53,9 +139,10 @@ export default function AudioPlayer() {
     const audio = audioRef.current;
     if (!audio) return;
     if (track?.slug === next.slug) {
-      if (startAt != null) audio.currentTime = startAt;
-      if (audio.paused) void audio.play();
-      else if (startAt == null) audio.pause();
+      const m = media();
+      if (startAt != null) m.seek(startAt);
+      if (m.paused()) m.play();
+      else if (startAt == null) m.pause();
       return;
     }
     let resume = startAt;
@@ -66,13 +153,76 @@ export default function AudioPlayer() {
         resume = 0;
       }
     }
-    pendingSeek.current = resume;
     setTrack(next);
     setTime(resume);
-    audio.src = next.audio;
+    setDuration(0);
+
+    if (next.youtube) {
+      audio.pause();
+      audio.removeAttribute("src");
+      if (ytRef.current) ytRef.current.loadVideoById({ videoId: next.youtube, startSeconds: resume });
+      else ytPending.current = { id: next.youtube, start: resume }; // created once the dock renders
+      return;
+    }
+
+    ytRef.current?.destroy();
+    ytRef.current = null;
+    pendingSeek.current = resume;
+    audio.src = next.audio!;
     audio.playbackRate = speed;
     void audio.play();
-  }, [track, speed]);
+  }, [track, speed, media]);
+
+  // Create the YouTube player inside the dock once it has rendered.
+  useEffect(() => {
+    const pending = ytPending.current;
+    const host = ytHostRef.current;
+    if (!isYouTube || !pending || !host) return;
+    ytPending.current = null;
+    let cancelled = false;
+    void loadYouTubeApi().then((YT) => {
+      if (cancelled) return;
+      // YouTube replaces the element it's given, so hand it a child React doesn't manage.
+      const el = document.createElement("div");
+      host.replaceChildren(el);
+      ytRef.current = new YT.Player(el, {
+        videoId: pending.id,
+        width: "100%",
+        height: "100%",
+        playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, start: Math.floor(pending.start) },
+        events: {
+          onReady: (e) => {
+            e.target.setPlaybackRate(speedRef.current);
+            e.target.playVideo();
+          },
+          onStateChange: (e) => {
+            setPlaying(e.data === YT_PLAYING);
+            if (e.data === YT_PLAYING) setDuration(e.target.getDuration());
+            if (e.data === YT_ENDED) {
+              try {
+                localStorage.removeItem(posKey(trackRef.current?.slug ?? ""));
+              } catch {}
+            }
+          },
+        },
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isYouTube, track]);
+
+  // YouTube has no timeupdate event, so poll while it plays.
+  useEffect(() => {
+    if (!isYouTube || !playing) return;
+    const id = window.setInterval(() => {
+      const yt = ytRef.current;
+      if (!yt) return;
+      setTime(yt.getCurrentTime());
+      setDuration(yt.getDuration());
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [isYouTube, playing]);
 
   // Delegated clicks: works for buttons on any page, including after navigation.
   useEffect(() => {
@@ -109,11 +259,11 @@ export default function AudioPlayer() {
     if (!track || !playing) return;
     const id = window.setInterval(() => {
       try {
-        localStorage.setItem(posKey(track.slug), String(Math.floor(audioRef.current?.currentTime ?? 0)));
+        localStorage.setItem(posKey(track.slug), String(Math.floor(media().current())));
       } catch {}
     }, 5000);
     return () => window.clearInterval(id);
-  }, [track, playing]);
+  }, [track, playing, media]);
 
   // Lock-screen and headphone controls.
   useEffect(() => {
@@ -123,30 +273,32 @@ export default function AudioPlayer() {
       artist: "Tech Talk with TimX",
       artwork: track.cover ? [{ src: track.cover, sizes: "512x512" }] : [],
     });
-    const a = audioRef.current;
-    navigator.mediaSession.setActionHandler("play", () => a?.play());
-    navigator.mediaSession.setActionHandler("pause", () => a?.pause());
-    navigator.mediaSession.setActionHandler("seekbackward", () => a && (a.currentTime -= 15));
-    navigator.mediaSession.setActionHandler("seekforward", () => a && (a.currentTime += 30));
-  }, [track]);
+    const m = media();
+    navigator.mediaSession.setActionHandler("play", () => m.play());
+    navigator.mediaSession.setActionHandler("pause", () => m.pause());
+    navigator.mediaSession.setActionHandler("seekbackward", () => m.seek(Math.max(0, m.current() - 15)));
+    navigator.mediaSession.setActionHandler("seekforward", () => m.seek(m.current() + 30));
+  }, [track, media]);
 
   const toggle = () => {
-    const a = audioRef.current;
-    if (!a) return;
-    if (a.paused) void a.play();
-    else a.pause();
+    const m = media();
+    if (m.paused()) m.play();
+    else m.pause();
   };
   const skip = (delta: number) => {
-    const a = audioRef.current;
-    if (a) a.currentTime = Math.min(Math.max(0, a.currentTime + delta), a.duration || Infinity);
+    const m = media();
+    m.seek(Math.min(Math.max(0, m.current() + delta), m.length() || Infinity));
   };
   const cycleSpeed = () => {
     const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
     setSpeed(next);
-    if (audioRef.current) audioRef.current.playbackRate = next;
+    media().rate(next);
   };
   const close = () => {
     audioRef.current?.pause();
+    ytRef.current?.destroy();
+    ytRef.current = null;
+    setPlaying(false);
     setTrack(null);
   };
 
@@ -176,8 +328,13 @@ export default function AudioPlayer() {
             aria-label="Podcast player"
             className="animate-in fade-in slide-in-from-bottom-10 duration-500 ease-[var(--ease-editorial)] fixed inset-x-3 bottom-3 z-50 mx-auto max-w-4xl overflow-hidden rounded-2xl bg-ink text-paper shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] ring-1 ring-paper/10 sm:inset-x-6 sm:bottom-5"
           >
+            {isYouTube && (
+              <div className="px-3 pt-3 sm:px-4 sm:pt-4">
+                <div ref={ytHostRef} className="h-[200px] w-full overflow-hidden rounded-lg bg-black sm:w-[356px]" />
+              </div>
+            )}
             <div className="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
-              <a href={`/podcast/${track.slug}`} className="hidden shrink-0 sm:block" aria-label="Open episode page">
+              <a href={`/podcast/${track.slug}`} className={isYouTube ? "hidden" : "hidden shrink-0 sm:block"} aria-label="Open episode page">
                 {track.cover ? (
                   <img src={track.cover} alt="" width={48} height={48} className="size-12 rounded-md object-cover" />
                 ) : (
@@ -216,10 +373,7 @@ export default function AudioPlayer() {
                     max={duration || 0}
                     step={1}
                     value={time}
-                    onChange={(e) => {
-                      const a = audioRef.current;
-                      if (a) a.currentTime = Number(e.target.value);
-                    }}
+                    onChange={(e) => media().seek(Number(e.target.value))}
                     aria-label="Seek"
                     aria-valuetext={`${fmt(time)} of ${fmt(duration)}`}
                     className="absolute inset-0 h-full w-full cursor-pointer opacity-0"

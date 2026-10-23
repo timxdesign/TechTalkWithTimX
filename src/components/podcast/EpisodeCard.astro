@@ -32,7 +32,7 @@ const guestLine = episode.guest ? [episode.guest.name, episode.guest.company].fi
         {guestLine && <p class="mt-2 text-sm font-medium text-ink-2">with {guestLine}</p>}
         {episode.dek && <p class="mt-3 line-clamp-2 max-w-2xl font-serif text-[1.05rem] text-ink-2">{episode.dek}</p>}
         <div class="mt-5">
-          <PlayButton slug={episode.slug} title={episode.title} audio={episode.audio_url} cover={episode.cover_url} label={label} size="sm" text="Play" />
+          <PlayButton slug={episode.slug} title={episode.title} audio={episode.audio_url} video={episode.video_url} cover={episode.cover_url} label={label} size="sm" text="Play" />
         </div>
       </div>
     </article>

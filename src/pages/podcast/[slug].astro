@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Avatar from "../../components/ui/Avatar.astro";
 import PlayButton from "../../components/podcast/PlayButton.astro";
+import { youtubeId } from "../../lib/youtube";
 import Waveform from "../../components/podcast/Waveform.astro";
 import ShareLinks from "../../components/story/ShareLinks.astro";
 import EpisodeCard from "../../components/podcast/EpisodeCard.astro";
@@ -21,7 +22,7 @@ cachePage(Astro, ["episodes", `episode:${episode.slug}`]);
 
 const more = (await getEpisodes({ limit: 4 })).filter((e) => e.id !== episode.id).slice(0, 3);
 const label = episodeLabel(episode);
-const youtubeId = episode.video_url?.match(/(?:youtu\.be\/|v=|embed\/)([\w-]{11})/)?.[1];
+const videoId = youtubeId(episode.video_url);
 
 // Transcript: blank-line separated paragraphs; "Name: text" lines get a speaker label.
 const transcript = (episode.transcript ?? "")
@@ -61,7 +62,7 @@ const transcript = (episode.transcript ?? "")
 
         <div class="mt-12 grid items-end gap-10 lg:grid-cols-12" data-intro style="--d:.15s">
           <div class="lg:col-span-5">
-            <PlayButton slug={episode.slug} title={episode.title} audio={episode.audio_url} cover={episode.cover_url} label={label} tone="paper" />
+            <PlayButton slug={episode.slug} title={episode.title} audio={episode.audio_url} video={episode.video_url} cover={episode.cover_url} label={label} tone="paper" />
             <p class="eyebrow mt-5 !text-paper/55">
               <time datetime={episode.published_at ?? undefined}>{formatDate(episode.published_at)}</time> · {formatDuration(episode.duration_seconds)}
             </p>
@@ -120,10 +121,10 @@ const transcript = (episode.transcript ?? "")
 
       <div class="min-w-0 lg:col-span-8">
         {
-          youtubeId && (
+          videoId && (
             <div class="mb-14 aspect-video overflow-hidden rounded-xl bg-ink">
               <iframe
-                src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
+                src={`https://www.youtube-nocookie.com/embed/${videoId}`}
                 title={`Video: ${episode.title}`}
                 loading="lazy"
                 allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"

@@ -1,10 +1,14 @@
 ---
 // Hands an episode to the persistent player. The player toggles data-state on
-// this button, which swaps the icon and label via CSS.
+// this button, which swaps the icon and label via CSS. An episode with no audio
+// file plays from its YouTube link instead.
+import { youtubeId } from "../../lib/youtube";
+
 interface Props {
   slug: string;
   title: string;
   audio: string | null;
+  video?: string | null;
   cover?: string | null;
   label?: string;
   size?: "sm" | "lg";
@@ -12,18 +16,20 @@ interface Props {
   text?: string;
 }
 
-const { slug, title, audio, cover, label, size = "lg", tone = "ink", text = "Play episode" } = Astro.props;
+const { slug, title, audio, video, cover, label, size = "lg", tone = "ink", text = "Play episode" } = Astro.props;
+const youtube = audio ? null : youtubeId(video);
 ---
 
 {
-  audio ? (
+  audio || youtube ? (
     <button
       type="button"
       data-play-episode
       data-state="idle"
       data-slug={slug}
       data-title={title}
-      data-audio={audio}
+      data-audio={audio ?? undefined}
+      data-youtube={youtube ?? undefined}
       data-cover={cover ?? undefined}
       data-label={label}
       aria-pressed="false"

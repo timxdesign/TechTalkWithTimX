@@ -53,7 +53,7 @@ const platforms = [
               </h2>
               {latest.dek && <p class="mt-5 max-w-2xl font-serif text-lg text-paper/70">{latest.dek}</p>}
               <div class="mt-8">
-                <PlayButton slug={latest.slug} title={latest.title} audio={latest.audio_url} cover={latest.cover_url} label={episodeLabel(latest)} tone="paper" />
+                <PlayButton slug={latest.slug} title={latest.title} audio={latest.audio_url} video={latest.video_url} cover={latest.cover_url} label={episodeLabel(latest)} tone="paper" />
               </div>
             </div>
             <div class="flex items-end lg:col-span-5">
